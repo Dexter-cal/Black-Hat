@@ -18,3 +18,6 @@ plugins:
   - baseline_auditor
   - foothold
   - remote_exec
+  - memory_phantom
+  - context_trigger
+  - messaging_auditor

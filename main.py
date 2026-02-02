@@ -25,6 +25,7 @@ async def main():
     parser.add_argument("-o", "--output", help="Output file (JSON)")
     parser.add_argument("-p", "--proxies", help="File containing proxy URLs (one per line)")
     parser.add_argument("-w", "--wordlist", help="Credential wordlist for auditing (user:pass format)")
+    parser.add_argument("-f", "--front", help="Domain to use for domain fronting (e.g., cdn.microsoft.com)")
     parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose output")
 
     args = parser.parse_args()
@@ -50,7 +51,7 @@ async def main():
     elif config.get('proxies'):
         proxies = config.get('proxies')
 
-    engine = Engine(proxies=proxies)
+    engine = Engine(proxies=proxies, front_domain=args.front or config.get('front_domain'))
     engine.load_plugins()
 
     if args.wordlist:
@@ -177,6 +178,30 @@ def print_summary(results):
         print("\n[!!!] DATA LEAKAGE DETECTED:")
         for l in leaks:
             print(f"      - [{l['type']}] {l['source']} (Severity: {l['severity']})")
+
+    messaging = results.get('messaging_artifacts', {})
+    if messaging:
+        print("\n[+] SECURE MESSAGING ARTIFACTS DISCOVERED:")
+        for ip, findings in messaging.items():
+            print(f"    Target IP: {ip}")
+            for f in findings:
+                print(f"      - {f['app']} ({f['storage_type']}) at {f['path']}")
+
+    triggers = results.get('triggered_operations', {})
+    if triggers:
+        print("\n[+] AUTONOMOUS CONTEXT TRIGGERS ACTIVATED:")
+        for ip, t_list in triggers.items():
+            print(f"    Target IP: {ip}")
+            for t in t_list:
+                print(f"      - {t['rule']} ({t['status']})")
+
+    memory = results.get('memory_indicators', {})
+    if memory:
+        print("\n[!!!] MEMORY-ONLY EXECUTION DETECTED:")
+        for ip, indicators in memory.items():
+            print(f"    Target IP: {ip}")
+            for ind in indicators:
+                print(f"      - {ind['indicator']} (PID: {ind['pid']})")
 
     print("\n" + "="*60)
 

@@ -24,10 +24,12 @@ class SpiderPlugin(BasePlugin):
             return
 
         visited.add(url)
-        # print(f"    [*] Crawling: {url}")
+
+        masked_url, host = self.stealth_client.mask_url(url)
+        headers = {'Host': host} if host else {}
 
         try:
-            async with session.get(url, timeout=3.0) as response:
+            async with session.get(masked_url, headers=headers, timeout=3.0) as response:
                 if response.status == 200:
                     content_type = response.headers.get('Content-Type', '')
                     if 'text/html' in content_type:
@@ -56,10 +58,7 @@ class SpiderPlugin(BasePlugin):
         open_ports = data.get('open_ports', {})
         spider_results = {}
 
-        proxy_url = self.proxy_manager.get_random_proxy() if self.proxy_manager else None
-        connector = ProxyConnector.from_url(proxy_url) if proxy_url else None
-
-        async with aiohttp.ClientSession(connector=connector) as session:
+        async with self.stealth_client.get_session() as session:
             for ip, ports in open_ports.items():
                 web_ports = [p for p in ports if p in [80, 443, 8080, 8443]]
                 if not web_ports:
