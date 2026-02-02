@@ -1,6 +1,6 @@
 import aiohttp
 from aiohttp_socks import ProxyConnector
-from secaudit.verifiers.base import BaseVerifier
+from omnistrike.verifiers.base import BaseVerifier
 
 class ExposedGitVerifier(BaseVerifier):
     @property

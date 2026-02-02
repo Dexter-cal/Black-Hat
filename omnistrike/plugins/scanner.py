@@ -1,5 +1,5 @@
 import asyncio
-from secaudit.plugins.base import BasePlugin
+from omnistrike.plugins.base import BasePlugin
 from python_socks.async_.asyncio import Proxy
 
 class ScannerPlugin(BasePlugin):

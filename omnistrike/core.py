@@ -1,8 +1,8 @@
 import asyncio
 import importlib
 import pkgutil
-from secaudit.plugins.base import BasePlugin
-from secaudit.proxymanager import ProxyManager
+from omnistrike.plugins.base import BasePlugin
+from omnistrike.proxymanager import ProxyManager
 
 class Engine:
     def __init__(self, proxies=None):
@@ -12,12 +12,12 @@ class Engine:
 
     def load_plugins(self):
         """Discover and load plugins from the plugins directory."""
-        import secaudit.plugins as plugins_pkg
+        import omnistrike.plugins as plugins_pkg
         for _, name, is_pkg in pkgutil.iter_modules(plugins_pkg.__path__):
             if is_pkg or name == 'base':
                 continue
 
-            module = importlib.import_module(f'secaudit.plugins.{name}')
+            module = importlib.import_module(f'omnistrike.plugins.{name}')
             for attr_name in dir(module):
                 attr = getattr(module, attr_name)
                 if isinstance(attr, type) and issubclass(attr, BasePlugin) and attr is not BasePlugin:
@@ -25,7 +25,7 @@ class Engine:
                     self.plugins.append(attr())
 
     async def run(self, target):
-        print(f"[*] Starting SecAudit on target: {target}")
+        print(f"[*] Starting OmniStrike on target: {target}")
         self.data['target'] = target
 
         # In a real scenario, we might want to define an execution order or dependency graph.
@@ -39,5 +39,5 @@ class Engine:
             except Exception as e:
                 print(f"[!] Error in {plugin.name}: {e}")
 
-        print(f"[*] SecAudit completed for {target}")
+        print(f"[*] OmniStrike completed for {target}")
         return self.data

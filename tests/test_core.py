@@ -1,7 +1,7 @@
 import unittest
 import asyncio
-from secaudit.core import Engine
-from secaudit.plugins.base import BasePlugin
+from omnistrike.core import Engine
+from omnistrike.plugins.base import BasePlugin
 
 class MockPlugin(BasePlugin):
     @property

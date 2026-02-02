@@ -3,22 +3,23 @@ import sys
 import argparse
 import json
 import yaml
-from secaudit.core import Engine
+from omnistrike.core import Engine
 
 BANNER = r"""
-  ____           _             _ _ _
- / ___| ___  ___/ \  _   _  __| (_) |_
- \___ \/ _ \/ __/ _ \| | | |/ _` | | __|
-  ___) |  __/ (_/ ___ \ |_| | (_| | | |_
- |____/ \___|\__/_/   \_\__,_|\__,_|_|\__|
+   ____                 _  _____ _        _ _
+  / __ \               (_)/ ____| |      (_) |
+ | |  | |_ __ ___  _ __  _| (___ | |_ _ __ _| | _____
+ | |  | | '_ ` _ \| '_ \| |\___ \| __| '__| | |/ / _ \
+ | |__| | | | | | | | | | |____) | |_| |  | |   <  __/
+  \____/|_| |_| |_|_| |_|_|_____/ \__|_|  |_|_|\_\___|
 
-      Elite Security Auditing Framework
-      Professional Recon & Compliance
+      Advanced Adversary Emulation Framework
+      Automated Red Team Operations v3.0
 """
 
 async def main():
     print(BANNER)
-    parser = argparse.ArgumentParser(description="SecAudit - Advanced Security Auditing Framework")
+    parser = argparse.ArgumentParser(description="OmniStrike - Advanced Security Auditing Framework")
     parser.add_argument("target", nargs="?", help="The target domain or IP to audit")
     parser.add_argument("-c", "--config", help="Configuration file (YAML)")
     parser.add_argument("-o", "--output", help="Output file (JSON)")
@@ -56,7 +57,7 @@ async def main():
         with open(args.wordlist, 'r') as f:
             engine.data['audit_wordlist'] = [line.strip().split(':') for line in f if ':' in line]
 
-    print(f"[*] Initializing scan on {target}...")
+    print(f"[*] Initializing operation on {target}...")
     results = await engine.run(target)
 
     if args.output:
@@ -134,6 +135,48 @@ def print_summary(results):
             print(f"    Target IP: {ip}")
             for f in findings:
                 print(f"      - {f['check']}: {f['output_snippet'].strip()}")
+
+    adv_sim = results.get('adversary_simulation', {})
+    if adv_sim:
+        print("\n[!] ADVERSARY SIMULATION LOG:")
+        for ip, findings in adv_sim.items():
+            print(f"    Target IP: {ip}")
+            for f in findings:
+                print(f"      - {f['technique']}: {f['status']}")
+
+    fuzzing = results.get('fuzzing_findings', {})
+    if fuzzing:
+        print("\n[!!!] WEB FUZZING VULNERABILITIES DETECTED:")
+        for ip, findings in fuzzing.items():
+            print(f"    Target IP: {ip}")
+            for f in findings:
+                print(f"      - {f['finding']} at {f['url']} (Payload: {f['payload']})")
+
+    protocol = results.get('protocol_audit', {})
+    if protocol:
+        print("\n[!] PROTOCOL SECURITY ISSUES:")
+        for ip, findings in protocol.items():
+            print(f"    Target IP: {ip}")
+            for f in findings:
+                print(f"      - Port {f['port']}: {f['finding']} (Severity: {f['severity']})")
+
+    cloud = results.get('cloud_storage', [])
+    if cloud:
+        print("\n[+] CLOUD STORAGE DISCOVERED:")
+        for c in cloud:
+            print(f"      - {c['status']}: {c['url']}")
+
+    takeovers = results.get('subdomain_takeovers', [])
+    if takeovers:
+        print("\n[!!!] SUBDOMAIN TAKEOVER VULNERABILITIES:")
+        for t in takeovers:
+            print(f"      - {t['subdomain']} -> {t['service']}")
+
+    leaks = results.get('data_leaks', [])
+    if leaks:
+        print("\n[!!!] DATA LEAKAGE DETECTED:")
+        for l in leaks:
+            print(f"      - [{l['type']}] {l['source']} (Severity: {l['severity']})")
 
     print("\n" + "="*60)
 

@@ -3,7 +3,7 @@ import aiohttp
 from aiohttp_socks import ProxyConnector
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse
-from secaudit.plugins.base import BasePlugin
+from omnistrike.plugins.base import BasePlugin
 
 class SpiderPlugin(BasePlugin):
     def __init__(self):

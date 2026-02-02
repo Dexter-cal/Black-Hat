@@ -1,6 +1,6 @@
 import asyncio
 import asyncssh
-from secaudit.plugins.base import BasePlugin
+from omnistrike.plugins.base import BasePlugin
 
 class PersistenceAuditorPlugin(BasePlugin):
     def __init__(self):

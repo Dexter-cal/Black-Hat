@@ -9,3 +9,12 @@ plugins:
   - system_auditor
   - spider
   - vuln_verifier
+  - adversary_sim
+  - web_fuzzer
+  - protocol_auditor
+  - cloud_auditor
+  - takeover_auditor
+  - leak_auditor
+  - baseline_auditor
+  - foothold
+  - remote_exec

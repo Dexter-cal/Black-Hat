@@ -1,8 +1,8 @@
 import importlib
 import pkgutil
 import asyncio
-from secaudit.plugins.base import BasePlugin
-from secaudit.verifiers.base import BaseVerifier
+from omnistrike.plugins.base import BasePlugin
+from omnistrike.verifiers.base import BaseVerifier
 
 class VulnerabilityVerifierPlugin(BasePlugin):
     def __init__(self):
@@ -19,12 +19,12 @@ class VulnerabilityVerifierPlugin(BasePlugin):
         return "Performs safe, non-destructive verification of high-impact vulnerabilities."
 
     def _load_verifiers(self):
-        import secaudit.verifiers as verifiers_pkg
+        import omnistrike.verifiers as verifiers_pkg
         for _, name, is_pkg in pkgutil.iter_modules(verifiers_pkg.__path__):
             if is_pkg or name == 'base':
                 continue
 
-            module = importlib.import_module(f'secaudit.verifiers.{name}')
+            module = importlib.import_module(f'omnistrike.verifiers.{name}')
             for attr_name in dir(module):
                 attr = getattr(module, attr_name)
                 if isinstance(attr, type) and issubclass(attr, BaseVerifier) and attr is not BaseVerifier:
