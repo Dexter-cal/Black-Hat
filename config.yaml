@@ -6,4 +6,6 @@ plugins:
   - vuln
   - credaudit
   - exploit_scanner
-  - persistence
+  - system_auditor
+  - spider
+  - vuln_verifier

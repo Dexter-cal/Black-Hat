@@ -1,7 +1,7 @@
 import asyncio
 import asyncssh
 import random
-from omniscan.plugins.base import BasePlugin
+from secaudit.plugins.base import BasePlugin
 
 class CredentialAuditPlugin(BasePlugin):
     def __init__(self):
@@ -41,17 +41,20 @@ class CredentialAuditPlugin(BasePlugin):
         open_ports = data.get('open_ports', {})
         audit_results = {}
 
+        # Load external credentials if provided in data (e.g. from config)
+        creds_to_test = data.get('audit_wordlist', self.credentials)
+
         for ip, ports in open_ports.items():
             if 22 in ports or "22" in ports:
                 print(f"[*] Starting credential audit on {ip}:22...")
                 found_creds = []
 
-                random.shuffle(self.credentials)
+                random.shuffle(creds_to_test)
 
                 current_source_index = 0
                 attempts_from_current_source = 0
 
-                for username, password in self.credentials:
+                for username, password in creds_to_test:
                     if attempts_from_current_source >= self.max_attempts_per_source:
                         current_source_index = (current_source_index + 1) % len(self.simulated_sources)
                         attempts_from_current_source = 0

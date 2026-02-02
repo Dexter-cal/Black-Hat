@@ -1,6 +1,6 @@
 import asyncio
 import aiodns
-from omniscan.plugins.base import BasePlugin
+from secaudit.plugins.base import BasePlugin
 
 class DiscoveryPlugin(BasePlugin):
     def __init__(self):

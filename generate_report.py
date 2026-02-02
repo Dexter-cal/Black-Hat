@@ -7,7 +7,7 @@ def generate_html(data, output_file):
     html_content = f"""
     <html>
     <head>
-        <title>OmniScan Report - {target}</title>
+        <title>SecAudit Report - {target}</title>
         <style>
             body {{ font-family: sans-serif; background-color: #f4f4f4; color: #333; }}
             .container {{ width: 80%; margin: auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }}
@@ -22,7 +22,7 @@ def generate_html(data, output_file):
     </head>
     <body>
         <div class="container">
-            <h1>OmniScan Security Audit Report</h1>
+            <h1>SecAudit Security Audit Report</h1>
             <div class="section">
                 <h2>General Information</h2>
                 <p><strong>Target:</strong> {target}</p>
@@ -41,14 +41,16 @@ def generate_html(data, output_file):
 
     # Open Ports
     open_ports = data.get('open_ports', {})
+    fingerprints = data.get('fingerprints', {})
     if open_ports:
-        html_content += '<div class="section"><h2>Open Ports & Services</h2><table><tr><th>IP</th><th>Port</th><th>Banner</th></tr>'
+        html_content += '<div class="section"><h2>Open Ports & Services</h2><table><tr><th>IP</th><th>OS Fingerprint</th><th>Port</th><th>Banner</th></tr>'
         for ip, ports in open_ports.items():
             for port, banner in ports.items():
                 ip_escaped = html.escape(str(ip))
+                fp_escaped = html.escape(str(fingerprints.get(ip, "Unknown")))
                 port_escaped = html.escape(str(port))
                 banner_escaped = html.escape(str(banner or 'N/A'))
-                html_content += f"<tr><td>{ip_escaped}</td><td>{port_escaped}</td><td>{banner_escaped}</td></tr>"
+                html_content += f"<tr><td>{ip_escaped}</td><td>{fp_escaped}</td><td>{port_escaped}</td><td>{banner_escaped}</td></tr>"
         html_content += '</table></div>'
 
     # Exploit Findings
@@ -85,11 +87,28 @@ def generate_html(data, output_file):
                 """
         html_content += '</div>'
 
-    # Persistence
-    persistence = data.get('persistence_findings', {})
-    if persistence:
-        html_content += '<div class="section"><h2>Persistence Entries Detected</h2>'
-        for ip, findings in persistence.items():
+    # Vulnerability Verification Results
+    verification = data.get('verification_results', {})
+    if verification:
+        html_content += '<div class="section"><h2>Vulnerability Verification Results</h2>'
+        for r in verification:
+            verifier_escaped = html.escape(r['verifier'])
+            target_escaped = html.escape(r['target'])
+            finding_escaped = html.escape(r['finding'])
+            severity_escaped = html.escape(r['severity'])
+            html_content += f"""
+            <div class="finding high">
+                <strong>{verifier_escaped} on {target_escaped}</strong><br>
+                Confirmed: {finding_escaped} (Severity: {severity_escaped})
+            </div>
+            """
+        html_content += '</div>'
+
+    # System Audit Results
+    system_audit = data.get('persistence_findings', {}) # Still using same key for compatibility or update it
+    if system_audit:
+        html_content += '<div class="section"><h2>System Audit Findings</h2>'
+        for ip, findings in system_audit.items():
             for f in findings:
                 check_escaped = html.escape(f['check'])
                 output_escaped = html.escape(f['output_snippet'])

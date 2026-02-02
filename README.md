@@ -1,14 +1,17 @@
-# OmniScan
+# SecAudit Elite
 
-OmniScan is a high-performance, modular security auditing and reconnaissance framework. It is designed to provide deep visibility into network infrastructure and help security researchers and administrators identify potential weaknesses.
+SecAudit Elite is a high-performance, modular security auditing and reconnaissance framework. It is designed to provide security professionals with deep visibility into network infrastructure and host security posture.
 
 ## Features
 
-- **Modular Plugin System**: Easily extend the framework with new auditing modules.
+- **Modular Plugin System**: Easily extend the framework with new auditing and discovery modules.
 - **Asynchronous Execution**: Built with `asyncio` for high performance and scalability.
-- **Smart Discovery**: Subdomain enumeration and DNS resolution.
-- **Port Scanning**: Fast, non-blocking port scanning with service banner grabbing.
-- **Vulnerability Mapping**: Automated identification of potential security issues based on service signatures.
+- **Advanced Reconnaissance**: Intelligent subdomain enumeration, DNS resolution, and OS fingerprinting.
+- **Service & Vulnerability Mapping**: Automated identification of services and potential security issues via banner analysis.
+- **Credential Strength Auditing**: Smart, rate-limit aware auditing of credential strength for common services (e.g., SSH).
+- **Compromise Detection**: Modules for auditing host systems to identify indicators of compromise (IoCs).
+- **Vulnerability Verification**: Safe, non-destructive verification of high-impact vulnerabilities.
+- **Professional Reporting**: Detailed JSON and sanitized HTML reporting for audit documentation.
 
 ## Installation
 
@@ -20,27 +23,34 @@ OmniScan is a high-performance, modular security auditing and reconnaissance fra
 
 ## Usage
 
-Run a scan on a target domain or IP:
+Run an audit on a target domain or IP:
 ```bash
 python3 main.py example.com
 ```
 
-Save results to a JSON file:
+Use a configuration file and proxies:
 ```bash
-python3 main.py example.com -o results.json
+python3 main.py -c config.yaml -p proxies.txt
+```
+
+Generate an HTML report:
+```bash
+python3 generate_report.py results.json report.html
 ```
 
 ## Architecture
 
-OmniScan uses a plugin-based architecture managed by a central engine:
+SecAudit uses a plugin-based architecture managed by a central engine:
 
-- `omniscan/core.py`: The engine that loads and executes plugins.
-- `omniscan/plugins/base.py`: The abstract base class for all plugins.
-- `omniscan/plugins/`: Directory containing various auditing modules.
+- `secaudit/core.py`: The engine that loads and executes plugins.
+- `secaudit/plugins/base.py`: The abstract base class for all plugins.
+- `secaudit/plugins/`: Directory containing auditing modules.
   - `discovery.py`: DNS and subdomain enumeration.
-  - `scanner.py`: Port scanning and service fingerprinting.
-  - `vuln.py`: Vulnerability analysis based on discovered services.
+  - `scanner.py`: Port scanning, service fingerprinting, and OS detection.
+  - `credaudit.py`: Credential strength auditing with proxy rotation.
+  - `exploit_scanner.py`: Web misconfiguration and sensitive file exposure scanner.
+  - `persistence.py`: Host-based persistence mechanism auditor.
 
 ## Ethical Use
 
-This tool is intended for legitimate security auditing and educational purposes only. Always obtain proper authorization before scanning any network infrastructure.
+This tool is intended for legitimate security auditing, compliance verification, and educational purposes only. Always obtain proper authorization before scanning any network infrastructure. The authors are not responsible for any misuse of this tool.

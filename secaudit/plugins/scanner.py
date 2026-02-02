@@ -1,9 +1,11 @@
 import asyncio
-from omniscan.plugins.base import BasePlugin
+from secaudit.plugins.base import BasePlugin
+from python_socks.async_.asyncio import Proxy
 
 class ScannerPlugin(BasePlugin):
     def __init__(self):
         self.common_ports = [21, 22, 23, 25, 53, 80, 110, 139, 143, 443, 445, 993, 995, 1723, 3306, 3389, 5900, 8080, 8443]
+        self.proxy_manager = None
 
     @property
     def name(self):
@@ -14,9 +16,15 @@ class ScannerPlugin(BasePlugin):
         return "Fast asynchronous port scanner and service discovery."
 
     async def scan_port(self, ip, port):
+        proxy_url = self.proxy_manager.get_random_proxy() if self.proxy_manager else None
         try:
-            conn = asyncio.open_connection(ip, port)
-            reader, writer = await asyncio.wait_for(conn, timeout=1.0)
+            if proxy_url:
+                proxy = Proxy.from_url(proxy_url)
+                sock = await proxy.connect(dest_host=ip, dest_port=port, timeout=1.0)
+                reader, writer = await asyncio.open_connection(sock=sock)
+            else:
+                conn = asyncio.open_connection(ip, port)
+                reader, writer = await asyncio.wait_for(conn, timeout=1.0)
 
             banner = ""
             try:
@@ -60,4 +68,30 @@ class ScannerPlugin(BasePlugin):
             scan_results[ip] = open_ports
             print(f"[*] Found {len(open_ports)} open ports on {ip}.")
 
+            # Simple OS Fingerprinting logic
+            os_guess = self.guess_os(open_ports)
+            if os_guess:
+                if 'fingerprints' not in data:
+                    data['fingerprints'] = {}
+                data['fingerprints'][ip] = os_guess
+                print(f"[*] OS Fingerprint Guess for {ip}: {os_guess}")
+
         data['open_ports'] = scan_results
+
+    def guess_os(self, open_ports):
+        # Fingerprinting based on banners and port combinations
+        all_banners = " ".join([str(b) for b in open_ports.values() if b]).lower()
+        ports = set(open_ports.keys())
+
+        if "ubuntu" in all_banners or "debian" in all_banners:
+            return "Linux (Ubuntu/Debian)"
+        if "centos" in all_banners or "redhat" in all_banners:
+            return "Linux (CentOS/RHEL)"
+        if "microsoft" in all_banners or 3389 in ports or 445 in ports:
+            return "Windows Server"
+        if "freebsd" in all_banners:
+            return "FreeBSD"
+        if 22 in ports and 80 in ports:
+            return "Linux/Unix"
+
+        return "Unknown"

@@ -1,6 +1,6 @@
 import asyncio
 import asyncssh
-from omniscan.plugins.base import BasePlugin
+from secaudit.plugins.base import BasePlugin
 
 class PersistenceAuditorPlugin(BasePlugin):
     def __init__(self):
@@ -9,12 +9,15 @@ class PersistenceAuditorPlugin(BasePlugin):
             ("crontab -l", "Check for user cron jobs"),
             ("ls -la /etc/cron.*", "Check for system-wide cron jobs"),
             ("systemctl list-unit-files --state=enabled", "Check for enabled systemd services"),
-            ("cat /etc/passwd", "Audit system users")
+            ("cat /etc/passwd", "Audit system users"),
+            ("find /home -name '.bash_history'", "Check for user bash history presence"),
+            ("ls -la /tmp", "Audit temporary directory for suspicious files"),
+            ("ps aux", "Audit running processes for anomalies")
         ]
 
     @property
     def name(self):
-        return "PersistenceAuditor"
+        return "SystemAuditor"
 
     @property
     def description(self):

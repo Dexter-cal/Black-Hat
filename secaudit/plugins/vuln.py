@@ -1,6 +1,6 @@
 import asyncio
 import re
-from omniscan.plugins.base import BasePlugin
+from secaudit.plugins.base import BasePlugin
 
 class VulnPlugin(BasePlugin):
     def __init__(self):

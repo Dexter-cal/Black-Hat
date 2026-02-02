@@ -3,25 +3,27 @@ import sys
 import argparse
 import json
 import yaml
-from omniscan.core import Engine
+from secaudit.core import Engine
 
 BANNER = r"""
-  ____  __  __ _   _ ___ ____   ____    _    _   _
- / __ \|  \/  | \ | |_ _/ ___| / ___|  / \  | \ | |
-| |  | | |\/| |  \| || |\___ \| |     / _ \ |  \| |
-| |__| | |  | | |\  || | ___) | |___ / ___ \| |\  |
- \____/|_|  |_|_| \_|___|____/ \____/_/   \_\_| \_|
+  ____           _             _ _ _
+ / ___| ___  ___/ \  _   _  __| (_) |_
+ \___ \/ _ \/ __/ _ \| | | |/ _` | | __|
+  ___) |  __/ (_/ ___ \ |_| | (_| | | |_
+ |____/ \___|\__/_/   \_\__,_|\__,_|_|\__|
 
-      Advanced Security Auditing Framework
-      v2.0 - Automation & Exploit Discovery
+      Elite Security Auditing Framework
+      Professional Recon & Compliance
 """
 
 async def main():
     print(BANNER)
-    parser = argparse.ArgumentParser(description="OmniScan - Advanced Security Auditing Framework")
+    parser = argparse.ArgumentParser(description="SecAudit - Advanced Security Auditing Framework")
     parser.add_argument("target", nargs="?", help="The target domain or IP to audit")
     parser.add_argument("-c", "--config", help="Configuration file (YAML)")
     parser.add_argument("-o", "--output", help="Output file (JSON)")
+    parser.add_argument("-p", "--proxies", help="File containing proxy URLs (one per line)")
+    parser.add_argument("-w", "--wordlist", help="Credential wordlist for auditing (user:pass format)")
     parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose output")
 
     args = parser.parse_args()
@@ -40,10 +42,19 @@ async def main():
         print("[!] No target specified.")
         return
 
-    engine = Engine()
+    proxies = []
+    if args.proxies:
+        with open(args.proxies, 'r') as f:
+            proxies = [line.strip() for line in f if line.strip()]
+    elif config.get('proxies'):
+        proxies = config.get('proxies')
+
+    engine = Engine(proxies=proxies)
     engine.load_plugins()
 
-    # We could pass config to plugins here if we wanted to
+    if args.wordlist:
+        with open(args.wordlist, 'r') as f:
+            engine.data['audit_wordlist'] = [line.strip().split(':') for line in f if ':' in line]
 
     print(f"[*] Initializing scan on {target}...")
     results = await engine.run(target)
@@ -68,10 +79,12 @@ def print_summary(results):
             print(f"    - {sub} ({', '.join(ips)})")
 
     open_ports = results.get('open_ports', {})
+    fingerprints = results.get('fingerprints', {})
     if open_ports:
         print("\n[+] Open Ports & Services:")
         for ip, ports in open_ports.items():
-            print(f"    Target IP: {ip}")
+            fp = fingerprints.get(ip, "Unknown")
+            print(f"    Target IP: {ip} (OS: {fp})")
             for port, banner in ports.items():
                 banner_str = f" -> {banner}" if banner else ""
                 print(f"      - Port {port}{banner_str}")
@@ -100,10 +113,24 @@ def print_summary(results):
             for f in findings:
                 print(f"      - {f['finding']} ({f['url']})")
 
-    persistence = results.get('persistence_findings', {})
-    if persistence:
-        print("\n[!] PERSISTENCE ENTRIES DETECTED:")
-        for ip, findings in persistence.items():
+    spider = results.get('spider_findings', {})
+    if spider:
+        print("\n[+] Web Surfaces Discovered (Spider):")
+        for ip, sdata in spider.items():
+            print(f"    Target IP: {ip}")
+            print(f"      - URLs found: {len(sdata['urls'])}")
+            print(f"      - Forms found: {len(sdata['forms'])}")
+
+    verification = results.get('verification_results', {})
+    if verification:
+        print("\n[!!!] VULNERABILITY VERIFICATION SUCCESSFUL:")
+        for r in verification:
+            print(f"      - {r['verifier']} on {r['target']}: {r['finding']} (Severity: {r['severity']})")
+
+    system_audit = results.get('persistence_findings', {})
+    if system_audit:
+        print("\n[!] SYSTEM AUDIT FINDINGS:")
+        for ip, findings in system_audit.items():
             print(f"    Target IP: {ip}")
             for f in findings:
                 print(f"      - {f['check']}: {f['output_snippet'].strip()}")
