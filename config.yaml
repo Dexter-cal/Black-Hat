@@ -25,3 +25,7 @@ plugins:
   - stegano_plugin
   - polyglot_plugin
   - behavioral_ai
+  - av_evasion
+  - lateral_pivoter
+  - supply_chain_auditor
+  - kernel_auditor

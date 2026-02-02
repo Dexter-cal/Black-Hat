@@ -14,7 +14,10 @@ REMEDIATION_DB = {
     "Weak cipher suite detected": {"remediation": "Disable weak ciphers (e.g., 3DES, RC4). Prioritize AEAD ciphers like AES-GCM.", "severity": "MEDIUM"},
     "Sensitive environment variables exposed": {"remediation": "Ensure .env files are not accessible via the web server. Move secrets to a secure vault.", "severity": "CRITICAL"},
     "Process executing from deleted file": {"remediation": "Immediate investigation required. This is a high-confidence indicator of RAM-resident malware.", "severity": "CRITICAL"},
-    "memfd_create usage detected": {"remediation": "Audit the process using anonymous memory. memfd is frequently used for fileless execution.", "severity": "HIGH"}
+    "memfd_create usage detected": {"remediation": "Audit the process using anonymous memory. memfd is frequently used for fileless execution.", "severity": "HIGH"},
+    "EDR/AV detected": {"remediation": "Verify security software is correctly configured and alerting. Monitor for evasion attempts.", "severity": "INFO"},
+    "Vulnerable package version": {"remediation": "Upgrade the identified package to the latest secure version in the manifest.", "severity": "HIGH"},
+    "Kernel escalation risk": {"remediation": "Patch the host kernel to the latest version. Disable unprivileged user namespaces if not required.", "severity": "CRITICAL"}
 }
 
 def get_remediation(finding_text):
@@ -242,6 +245,58 @@ def generate_html(data, output_file):
                 <div class="finding info">
                     <span class="severity-badge INFO">AUTONOMOUS</span>
                     <strong>Rule: {html.escape(t['rule'])}</strong> (Status: {html.escape(t['status'])})
+                </div>"""
+        html_content += '</div>'
+
+    # Lateral Movement & Attack Path
+    lateral = data.get('lateral_movement_paths', {})
+    if lateral:
+        html_content += '<div class="card"><h2>Attack Path & Lateral Movement Visualization</h2>'
+        html_content += '<div style="background: rgba(0,255,65,0.05); padding: 20px; border-radius: 8px;">'
+        for jump_box, targets in lateral.items():
+            html_content += f"""
+            <div style="margin-bottom: 15px;">
+                <span style="color: var(--accent);">[ENTRY]</span> {html.escape(jump_box)}
+                <span style="color: var(--accent);">──►</span>
+                <span style="color: var(--info);">{html.escape(', '.join(targets))}</span>
+            </div>"""
+        html_content += '</div></div>'
+
+    # Security Software
+    av = data.get('security_software', {})
+    if av:
+        html_content += '<div class="card"><h2>EDR/AV & Security Software Detection</h2>'
+        for ip, software in av.items():
+            html_content += f"<h3>Host: {html.escape(ip)}</h3><ul>"
+            for s in software:
+                html_content += f"<li><strong>{html.escape(s)}</strong></li>"
+            html_content += "</ul></div>"
+
+    # Supply Chain
+    supply = data.get('supply_chain_vulns', {})
+    if supply:
+        html_content += '<div class="card"><h2>Supply Chain & Dependency Analysis</h2>'
+        for ip, vulns in supply.items():
+            for v in vulns:
+                html_content += f"""
+                <div class="finding high">
+                    <span class="severity-badge HIGH">VULNERABLE_PKG</span>
+                    <strong>{html.escape(v['package'])} ({html.escape(v['match'])})</strong> on {html.escape(ip)}<br>
+                    {html.escape(v['finding'])}
+                </div>"""
+        html_content += '</div>'
+
+    # Kernel Risks
+    ker = data.get('escalation_risks', {})
+    if ker:
+        html_content += '<div class="card"><h2>Privilege Escalation: Kernel & Config Risks</h2>'
+        for ip, risks in ker.items():
+            for r in risks:
+                html_content += f"""
+                <div class="finding high">
+                    <span class="severity-badge {r['severity']}">{html.escape(r['type'])}</span>
+                    <strong>{html.escape(r['finding'])}</strong> on {html.escape(ip)}<br>
+                    <pre>{html.escape(r.get('details', ''))}</pre>
                 </div>"""
         html_content += '</div>'
 
