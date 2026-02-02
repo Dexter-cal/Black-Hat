@@ -4,6 +4,7 @@ class BasePlugin(abc.ABC):
     def __init__(self):
         self.proxy_manager = None
         self.stealth_client = None
+        self.adapter = None
 
     @abc.abstractmethod
     async def run(self, target, data):

@@ -6,3 +6,5 @@ pyyaml>=6.0.0
 aiohttp-socks>=0.8.0
 python-socks>=2.0.0
 beautifulsoup4>=4.0.0
+pillow>=10.0.0
+astor>=0.8.0

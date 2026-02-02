@@ -5,6 +5,7 @@ import aiohttp
 import random
 from omnistrike.plugins.base import BasePlugin
 from omnistrike.proxymanager import ProxyManager
+from omnistrike.adapters.base import get_adapter
 from aiohttp_socks import ProxyConnector
 
 class StealthClient:
@@ -53,6 +54,7 @@ class Engine:
         self.data = {}
         self.proxy_manager = ProxyManager(proxies)
         self.stealth_client = StealthClient(self.proxy_manager, front_domain)
+        self.adapter = get_adapter()
 
     def load_plugins(self):
         """Discover and load plugins from the plugins directory."""
@@ -79,6 +81,7 @@ class Engine:
             # Pass core components to plugins
             plugin.proxy_manager = self.proxy_manager
             plugin.stealth_client = self.stealth_client
+            plugin.adapter = self.adapter
             try:
                 await plugin.run(target, self.data)
             except Exception as e:

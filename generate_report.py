@@ -140,6 +140,17 @@ def generate_html(data, output_file):
             </tr>"""
     html_content += "</table></div>"
 
+    # Polymorphic Engine
+    poly = data.get('polymorphic_output', '')
+    if poly:
+        html_content += '<div class="card"><h2>Polymorphic Engine: Code Morphing Preview</h2>'
+        html_content += f"""
+        <div class="finding info">
+            <strong>Self-Rewriting Logic (Polymorphic Output):</strong><br>
+            <pre>{html.escape(poly)}</pre>
+        </div>"""
+        html_content += '</div>'
+
     # Messaging
     messaging = data.get('messaging_artifacts', {})
     if messaging:
@@ -153,6 +164,42 @@ def generate_html(data, output_file):
                     PATH: <code>{html.escape(f['path'])}</code>
                     <pre>{html.escape(f['metadata'])}</pre>
                 </div>"""
+        html_content += '</div>'
+
+    # Behavioral AI
+    ai = data.get('ai_orchestration', {})
+    if ai:
+        html_content += '<div class="card"><h2>Behavioral AI: Autonomous Decision Engine</h2>'
+        html_content += f"""
+        <div class="finding info">
+            <span class="severity-badge INFO">AI_MODE</span>
+            <strong>MODE: {html.escape(ai['mode'])}</strong><br>
+            INTENSITY SCORE: <code>{ai['intensity_score']}</code><br>
+            <pre>Context Snapshot: {html.escape(json.dumps(ai['context_snapshot'], indent=2))}</pre>
+        </div>"""
+        html_content += '</div>'
+
+    # Steganography
+    steg = data.get('stegano_status', '')
+    if steg:
+        html_content += '<div class="card"><h2>Steganographic Channel: Covert Smuggling</h2>'
+        html_content += f"""
+        <div class="finding info">
+            <span class="severity-badge INFO">STEGANO</span>
+            <strong>STATUS: {html.escape(steg)}</strong><br>
+            DECODED C2 INSTRUCTION: <code>{html.escape(data.get('stegano_decoded_sample', 'None'))}</code>
+        </div>"""
+        html_content += '</div>'
+
+    # Polyglot
+    polyglot = data.get('polyglot_discovery', '')
+    if polyglot:
+        html_content += '<div class="card"><h2>Polyglot Delivery: Advanced Evasion Templates</h2>'
+        html_content += f"""
+        <div class="finding info">
+            <span class="severity-badge INFO">POLYGLOT</span>
+            <strong>{html.escape(polyglot)}</strong>
+        </div>"""
         html_content += '</div>'
 
     # Memory

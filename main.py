@@ -203,6 +203,17 @@ def print_summary(results):
             for ind in indicators:
                 print(f"      - {ind['indicator']} (PID: {ind['pid']})")
 
+    ai = results.get('ai_orchestration', {})
+    if ai:
+        print("\n[!!!] BEHAVIORAL AI ORCHESTRATION:")
+        print(f"      - MODE: {ai['mode']}")
+        print(f"      - INTENSITY: {ai['intensity_score']}")
+
+    steg = results.get('stegano_status', '')
+    if steg:
+        print(f"\n[!!!] STEGANOGRAPHIC CHANNEL: {steg}")
+        print(f"      - DECODED SAMPLE: {results.get('stegano_decoded_sample')}")
+
     print("\n" + "="*60)
 
 if __name__ == "__main__":

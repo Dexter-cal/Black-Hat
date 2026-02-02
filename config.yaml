@@ -21,3 +21,7 @@ plugins:
   - memory_phantom
   - context_trigger
   - messaging_auditor
+  - polymorphic_plugin
+  - stegano_plugin
+  - polyglot_plugin
+  - behavioral_ai
