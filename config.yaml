@@ -1,0 +1,9 @@
+target: 127.0.0.1
+verbose: true
+plugins:
+  - discovery
+  - scanner
+  - vuln
+  - credaudit
+  - exploit_scanner
+  - persistence
