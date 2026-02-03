@@ -22,6 +22,15 @@ class DiscoveryPlugin(BasePlugin):
             return []
 
     async def run(self, target, data):
+        stealth = data.get('operation_profile', '3') # Default to research
+        delay = 0
+        if stealth == '1' or stealth == 'stealth':
+            delay = 2
+            print("[*] Stealth mode active: implementing 2s delay between queries.")
+        elif stealth == 'extreme':
+            delay = 10
+            print("[*] EXTREME Stealth active: implementing 10s delay between queries.")
+
         resolver = aiodns.DNSResolver()
         print(f"[*] Resolving target: {target}")
 
@@ -37,7 +46,13 @@ class DiscoveryPlugin(BasePlugin):
                 hostname = f"{sub}.{target}"
                 tasks.append(self.resolve(resolver, hostname))
 
-            results = await asyncio.gather(*tasks)
+            if delay > 0:
+                results = []
+                for t in tasks:
+                    results.append(await t)
+                    await asyncio.sleep(delay)
+            else:
+                results = await asyncio.gather(*tasks)
 
             for sub, ips in zip(self.common_subdomains, results):
                 if ips:

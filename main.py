@@ -22,8 +22,9 @@ def parse_args():
     parser = argparse.ArgumentParser(description="OmniStrike Apex - Advanced Adversary Emulation Framework")
 
     # 1-4: Operation Modes
-    parser.add_argument("--mode", choices=['1', '2', '3', '4', 'implant', 'exploit', 'generate', 'c2'],
-                        help="Operation Mode: 1:implant, 2:exploit, 3:generate, 4:c2")
+    parser.add_argument("command", nargs='?', choices=['auto', 'wifi', 'generate-tool', 'wordlist', 'evasion-demo'], help="Direct command to execute")
+    parser.add_argument("--mode", choices=['1', '2', '3', '4', 'implant', 'exploit', 'generate', 'c2', 'wifi'],
+                        help="Operation Mode: 1:implant, 2:exploit, 3:generate, 4:c2, wifi")
 
     # 5: Target
     parser.add_argument("-t", "--target", help="Target device, IP, or application")
@@ -42,6 +43,8 @@ def parse_args():
     parser.add_argument("-w", "--wordlist", help="Credential wordlist")
     parser.add_argument("-f", "--front", help="Domain fronting host")
     parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose output")
+    parser.add_argument("--carrier", help="Carrier file for media payload conversion (image, video, doc)")
+    parser.add_argument("--payload-text", help="Custom payload text for generation")
 
     # Red-Team Specific Options (Flags)
     parser.add_argument("--zero-click", action="store_true", help="10: Prefer zero-click vectors")
@@ -52,6 +55,17 @@ def parse_args():
     parser.add_argument("--memory-only", action="store_true", help="31: Memory-resident operation only")
     parser.add_argument("--burn-phase", action="store_true", help="33: Self-destruct triggers enabled")
 
+    # Persistent Mode
+    parser.add_argument("--persistent", action="store_true", help="Enable persistent exploitation loop")
+
+    # WiFi Options
+    parser.add_argument("--scan", action="store_true", help="WiFi: Scan networks")
+    parser.add_argument("--evil-twin", help="WiFi: SSID for evil twin")
+    parser.add_argument("--deauth", help="WiFi: BSSID for deauth")
+
+    # Tool Gen
+    parser.add_argument("--purpose", help="Purpose for AI tool generation")
+
     return parser.parse_args()
 
 async def main():
@@ -61,6 +75,34 @@ async def main():
     DependencyInstaller.check_and_install()
 
     args = parse_args()
+
+    # Handle direct commands
+    if args.command == 'wordlist':
+        from omnistrike.wordlist_gen import WordlistGenerator
+        gen = WordlistGenerator(args.target or "target.com")
+        words = gen.generate()
+        out = args.output or "wordlist.txt"
+        with open(out, 'w') as f:
+            f.write("\n".join(words))
+        print(f"[*] Wordlist saved to {out}")
+        return
+
+    if args.command == 'evasion-demo':
+        from omnistrike.plugins.evasion_demo import EvasionDemoPlugin
+        plugin = EvasionDemoPlugin()
+        await plugin.run(args.target or "localhost", {})
+        return
+
+    if args.command == 'generate-tool':
+        from omnistrike.learning import SelfHealingEngine, PersistentLearningDB
+        from omnistrike.ai_engine import MultiAIEngine
+        db = PersistentLearningDB()
+        ai = MultiAIEngine()
+        healer = SelfHealingEngine(ai, db)
+        purpose = args.purpose or "General Purpose Exploit"
+        path = await healer.heal_and_retry("manual_gen", "Manual request", purpose)
+        print(f"[*] Tool generated at {path}")
+        return
 
     if not args.target and not args.config:
         print("[!] No target or configuration specified.")
@@ -77,20 +119,24 @@ async def main():
         return
 
     # Map numbered modes/profiles
-    mode = args.mode or config.get('mode', '2')
+    mode = args.mode or config.get('mode')
+    if args.command == 'auto' or args.persistent:
+        mode = '2' # Persistent defaults to exploit mode
+    elif args.command == 'wifi':
+        mode = 'wifi'
+
+    if not mode:
+        mode = '2'
+
     profile = args.profile or config.get('profile', '3')
 
     # Configure plugin selection based on mode
-    # Mode 1: Implant (Shadow surveillance)
-    # Mode 2: Exploit (Infiltration & Pivot)
-    # Mode 3: Generate (Weaponization research)
-    # Mode 4: C2 (Exfiltration & Orchestration)
-
     mode_plugins = {
         '1': ['behavioral_ai', 'memory_phantom', 'context_trigger', 'system_auditor', 'av_evasion', 'messaging_auditor', 'stealth_orchestrator', 'consensus_ai'],
         '2': ['discovery', 'scanner', 'credaudit', 'exploit_scanner', 'vuln_verifier', 'lateral_pivoter', 'kernel_auditor', 'supply_chain_auditor', 'foothold', 'remote_exec', 'exploit_intelligence', 'zeroclick_auditor', 'swarm_orchestrator', 'vuln_intel', 'attack_lab'],
         '3': ['polymorphic_plugin', 'stegano_plugin', 'polyglot_plugin', 'delivery_suite'],
-        '4': ['stealth_c2', 'leak_auditor', 'spider', 'web_fuzzer', 'protocol_auditor', 'phishing_auditor', 'osint_master']
+        '4': ['stealth_c2', 'leak_auditor', 'spider', 'web_fuzzer', 'protocol_auditor', 'phishing_auditor', 'osint_master'],
+        'wifi': ['wifi_suite']
     }
 
     mode_plugins['implant'] = mode_plugins['1']
@@ -122,6 +168,18 @@ async def main():
     engine.data['risk_level'] = args.risk or '2'
     engine.data['stealth_mode'] = args.stealth
     engine.data['memory_resident'] = args.memory_only
+    engine.data['carrier_file'] = args.carrier or config.get('carrier_file')
+    engine.data['custom_payload'] = args.payload_text or config.get('custom_payload')
+    engine.data['persistent_mode'] = args.command == 'auto' or args.persistent
+
+    if mode == 'wifi':
+        if args.scan: engine.data['wifi_mode'] = 'scan'
+        elif args.evil_twin:
+            engine.data['wifi_mode'] = 'evil-twin'
+            engine.data['wifi_target_ssid'] = args.evil_twin
+        elif args.deauth:
+            engine.data['wifi_mode'] = 'deauth'
+            engine.data['wifi_target_bssid'] = args.deauth
 
     print(f"[*] Initializing APEX operation on {target} [Mode:{mode} Profile:{profile}]...")
     results = await engine.run(target)

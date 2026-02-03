@@ -1,4 +1,5 @@
 from omnistrike.plugins.base import BasePlugin
+from omnistrike.media_converter import MediaPayloadConverter
 import os
 
 class PolyglotGeneratorPlugin(BasePlugin):
@@ -8,21 +9,25 @@ class PolyglotGeneratorPlugin(BasePlugin):
 
     @property
     def description(self):
-        return "Generates polyglot research files (e.g., ZIP/Python) to study evasion techniques."
+        return "Generates polyglot research files and weaponized media carriers."
 
     async def run(self, target, data):
-        print("[*] Generating Polyglot research template (ZIP/Python hybrid)...")
+        carrier = data.get('carrier_file')
+        payload = data.get('custom_payload', 'alert("OmniStrike Apex Payload Executed")')
 
-        # A simple polyglot ZIP/Python hybrid:
-        # A ZIP file starts with PK header. A Python file can start with a comment.
-        # We can create a file that is a valid Python script and also a valid ZIP.
+        if not carrier:
+            print("[!] No carrier file provided for polyglot generation. Using default hybrid.")
+            hybrid_file = "research_hybrid.py.zip"
+            with open(hybrid_file, 'wb') as f:
+                f.write(b'# This is a Python script\nprint("OmniStrike Hybrid Executed")\n')
+            data['polyglot_discovery'] = f"Hybrid file generated: {hybrid_file}"
+            return
 
-        hybrid_file = "research_hybrid.py.zip"
-        content = b'# This is a Python script\nprint("OmniStrike Hybrid Executed")\n'
-        # In a real tool, we'd append actual ZIP data.
-
-        with open(hybrid_file, 'wb') as f:
-            f.write(content)
-
-        data['polyglot_discovery'] = f"Hybrid file generated: {hybrid_file}"
-        print(f"[!!!] SUCCESS: Polyglot research file ready at {hybrid_file}")
+        print(f"[*] Weaponizing carrier: {carrier}...")
+        converter = MediaPayloadConverter()
+        try:
+            out_path = converter.convert_auto(carrier, payload)
+            print(f"[!!!] SUCCESS: Weaponized carrier ready at {out_path}")
+            data['polyglot_discovery'] = f"Weaponized carrier: {out_path}"
+        except Exception as e:
+            print(f"[!] Weaponization failed: {e}")

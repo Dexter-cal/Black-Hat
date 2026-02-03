@@ -9,6 +9,7 @@ from omnistrike.adapters.base import get_adapter
 from omnistrike.ai_engine import MultiAIEngine
 from omnistrike.notifier import OmniAlert
 from omnistrike.payload_gen import MasterPayloadGenerator
+from omnistrike.learning import PersistentLearningDB, SelfHealingEngine
 from aiohttp_socks import ProxyConnector
 import time
 
@@ -104,6 +105,7 @@ class Engine:
         self.ai_engine = MultiAIEngine()
         self.notifier = OmniAlert()
         self.payload_gen = MasterPayloadGenerator()
+        self.learning_db = PersistentLearningDB()
 
     def load_plugins(self):
         """Discover and load plugins from the plugins directory."""
@@ -123,6 +125,9 @@ class Engine:
         print(f"[*] Starting OmniStrike on target: {target}")
         self.data['target'] = target
 
+        if self.data.get('persistent_mode'):
+            return await self.run_persistent(target)
+
         # In a real scenario, we might want to define an execution order or dependency graph.
         # For simplicity, we'll run them in the order they are loaded or a predefined order.
         for plugin in self.plugins:
@@ -137,10 +142,53 @@ class Engine:
             plugin.payload_gen = self.payload_gen
             try:
                 await plugin.run(target, self.data)
+                self.learning_db.log_attack(target, plugin.name, "default_run", "SUCCESS")
             except Exception as e:
                 print(f"[!] Error in {plugin.name}: {e}")
+                self.learning_db.log_attack(target, plugin.name, "default_run", f"FAILURE: {e}")
 
         print(f"[*] Operation completed for {target}")
+        return self.data
+
+    async def run_persistent(self, target, max_retries=1000):
+        print(f"[*] ENTERING PERSISTENT MODE: Targeting {target}")
+        retry_count = 0
+
+        while retry_count < max_retries:
+            print(f"\n[Cycle {retry_count + 1}] Strategy planning initiated...")
+
+            # Step 1: Execute plugins (Scan, Exploit, etc.)
+            for plugin in self.plugins:
+                print(f"[*] Cycle {retry_count+1} - Running {plugin.name}...")
+                plugin.proxy_manager = self.proxy_manager
+                plugin.stealth_client = self.stealth_client
+                plugin.adapter = self.adapter
+                plugin.session_manager = self.session_manager
+                plugin.ai_engine = self.ai_engine
+                plugin.notifier = self.notifier
+                plugin.payload_gen = self.payload_gen
+                try:
+                    await plugin.run(target, self.data)
+                    self.learning_db.log_attack(target, plugin.name, "default_run", "SUCCESS")
+                except Exception as e:
+                    print(f"[!] Cycle {retry_count+1} - {plugin.name} failed: {e}")
+                    self.learning_db.log_attack(target, plugin.name, "default_run", f"FAILURE: {e}")
+
+            # Check if any session was established
+            if self.session_manager.sessions:
+                print(f"[!!!] SUCCESS: Asset compromise achieved in cycle {retry_count+1}")
+                return self.data
+
+            # Step 2: Self-healing/Adaptation
+            healer = SelfHealingEngine(self.ai_engine, self.learning_db)
+            await healer.heal_and_retry(target, "Previous cycle failed to gain sessions", "multi_vector")
+
+            # Adaptive delay
+            delay = min(5 * (retry_count + 1), 60)
+            print(f"[*] Adaptation delay: {delay}s...")
+            await asyncio.sleep(delay)
+            retry_count += 1
+
         return self.data
 
 def print_summary(results):

