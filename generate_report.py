@@ -15,6 +15,9 @@ REMEDIATION_DB = {
     "Sensitive environment variables exposed": {"remediation": "Ensure .env files are not accessible via the web server. Move secrets to a secure vault.", "severity": "CRITICAL"},
     "Process executing from deleted file": {"remediation": "Immediate investigation required. This is a high-confidence indicator of RAM-resident malware.", "severity": "CRITICAL"},
     "memfd_create usage detected": {"remediation": "Audit the process using anonymous memory. memfd is frequently used for fileless execution.", "severity": "HIGH"},
+    "Potential Insecure Deserialization": {"remediation": "Audit object serialization endpoints. Use safe serialization libraries.", "severity": "HIGH"},
+    "Potential XML External Entity (XXE)": {"remediation": "Disable external entity processing in XML parsers.", "severity": "HIGH"},
+    "Potential Server-Side Request Forgery (SSRF)": {"remediation": "Implement strict whitelisting for outbound requests.", "severity": "MEDIUM"},
     "EDR/AV detected": {"remediation": "Verify security software is correctly configured and alerting. Monitor for evasion attempts.", "severity": "INFO"},
     "Vulnerable package version": {"remediation": "Upgrade the identified package to the latest secure version in the manifest.", "severity": "HIGH"},
     "Kernel escalation risk": {"remediation": "Patch the host kernel to the latest version. Disable unprivileged user namespaces if not required.", "severity": "CRITICAL"}
@@ -106,14 +109,16 @@ def generate_html(data, output_file):
     <body>
         <div class="sidebar">
             <h2 style="color: var(--accent)">OMNISTRIKE APEX</h2>
-            <div style="font-size: 0.8em; color: var(--text-secondary); margin-bottom: 30px;">Adv Adversary Emulation Suite</div>
+            <div style="font-size: 0.8em; color: var(--text-secondary); margin-bottom: 10px;">Sovereign Edition v8.0</div>
+            <div style="font-size: 0.8em; color: var(--text-secondary); margin-bottom: 30px;">Digital Shadow Intelligence</div>
             <div style="margin-bottom: 10px;">• TARGET: {target}</div>
             <div style="margin-bottom: 10px;">• UPTIME: 100%</div>
-            <div style="margin-bottom: 10px;">• NODES: {len(data.get('compromised_hosts', {}))} compromised</div>
-            <div style="margin-bottom: 10px;">• PROXIES: ACTIVE</div>
+            <div style="margin-bottom: 10px;">• NODES: {len(data.get('compromised_hosts', {}))} active</div>
+            <div style="margin-bottom: 10px;">• AI: MULTI-CONSENSUS</div>
+            <div style="margin-bottom: 10px;">• STEALTH: ACTIVE</div>
         </div>
         <div class="main-content">
-            <h1>COMMAND CENTER: OPERATION {target.upper()}</h1>
+            <h1>SOVEREIGN COMMAND: OPERATION {target.upper()}</h1>
 
             <div class="card">
                 <div class="section-header">
@@ -169,6 +174,18 @@ def generate_html(data, output_file):
                 </div>"""
         html_content += '</div>'
 
+    # AI Consensus
+    consensus = data.get('ai_consensus', {})
+    if consensus:
+        html_content += '<div class="card"><h2>Consensus Intelligence: Multi-Model AI Analysis</h2>'
+        html_content += f"""
+        <div class="finding info">
+            <span class="severity-badge INFO">AI_CONSENSUS</span>
+            <strong>{html.escape(consensus['summary'])}</strong><br>
+            <pre>Provider Responses: {html.escape(json.dumps(consensus['individual_responses'], indent=2))}</pre>
+        </div>"""
+        html_content += '</div>'
+
     # Stealth Orchestration
     stealth = data.get('stealth_strategy', {})
     if stealth:
@@ -192,6 +209,34 @@ def generate_html(data, output_file):
                 <span class="severity-badge INFO">PRIORITY_{path['priority']}</span>
                 <strong>{html.escape(path['vector'])} on {html.escape(path['target'])}</strong><br>
                 RISK SCORE: <code>{path['risk_score']}</code> | ACTION: <strong>{path['action']}</strong>
+            </div>"""
+        html_content += '</div>'
+
+    # Attack Lab
+    attack_lab = data.get('payload_recommendations', [])
+    if attack_lab:
+        html_content += '<div class="card"><h2>Attack Vector Lab: Optimal Payload Recommendations</h2>'
+        for r in attack_lab:
+            html_content += f"""
+            <div class="finding info">
+                <span class="severity-badge INFO">LAB_READY</span>
+                <strong>Target: {html.escape(r['target'])}</strong><br>
+                For {html.escape(r['vuln_type'])}, use category: <code>{html.escape(r['recommended_payload_category'].upper())}</code>
+            </div>"""
+        html_content += '</div>'
+
+    # Deep Vulnerabilities
+    deep_vulns = data.get('deep_vulnerabilities', [])
+    if deep_vulns:
+        html_content += '<div class="card"><h2>Vulnerability Matrix: Sophisticated Findings</h2>'
+        for v in deep_vulns:
+            rem = get_remediation(v['type'])
+            html_content += f"""
+            <div class="finding">
+                <span class="severity-badge {v['severity']}">{v['severity']}</span>
+                <strong>{html.escape(v['type'])}</strong> on {html.escape(v['ip'])}:<code>{v['port']}</code><br>
+                Confidence: {v['confidence']*100:.0f}%
+                <div class="remediation"><strong>Remediation:</strong> {html.escape(rem['remediation'])}</div>
             </div>"""
         html_content += '</div>'
 
@@ -338,6 +383,62 @@ def generate_html(data, output_file):
                     <strong>{html.escape(r['finding'])}</strong> on {html.escape(ip)}<br>
                     <pre>{html.escape(r.get('details', ''))}</pre>
                 </div>"""
+        html_content += '</div>'
+
+    # Harvested Secrets
+    secrets = data.get('harvested_secrets', {})
+    if secrets:
+        html_content += '<div class="card"><h2>Exfiltration Intel: Harvested Secrets & Keys</h2>'
+        for sid, findings in secrets.items():
+            html_content += f"<h3>Session {sid} Findings</h3>"
+            for f in findings:
+                html_content += f"""
+                <div class="finding high">
+                    <span class="severity-badge CRITICAL">{html.escape(f['type'])}</span>
+                    <strong>Extracted Value:</strong> <code>{html.escape(str(f['match']))}</code>
+                </div>"""
+        html_content += '</div>'
+
+    # Backdoor Deployments
+    backdoors = data.get('backdoor_deployments', {})
+    if backdoors:
+        html_content += '<div class="card"><h2>Persistence Strategy: Morphing Backdoors</h2>'
+        for sid, path in backdoors.items():
+            html_content += f"""
+            <div class="finding high">
+                <span class="severity-badge CRITICAL">MORPHED_PERSISTENCE</span>
+                <strong>Session {sid} Control Path: <code>{html.escape(path)}</code></strong><br>
+                STATUS: Active | LOGIC: Polymorphic Bash | TRIGGERS: Cron, Bashrc
+            </div>"""
+        html_content += '</div>'
+
+    # Session Intelligence
+    sessions = data.get('session_intelligence', {})
+    if sessions:
+        html_content += '<div class="card"><h2>Sovereign Asset Intel: Deep-Dive Session Profiles</h2>'
+        for sid, info in sessions.items():
+            html_content += f"""
+            <div class="finding info">
+                <span class="severity-badge INFO">SESSION_{sid}</span>
+                <strong>Identity: {html.escape(str(info.get('identity', 'Unknown')))}</strong><br>
+                KERNEL: <code>{html.escape(str(info.get('kernel', 'N/A')))}</code><br>
+                UPTIME: <em>{html.escape(str(info.get('uptime', 'N/A')))}</em><br>
+                SECURITY: <span style="color: var(--warning);">{html.escape(str(info.get('security_indicators', 'None')))}</span>
+                <pre>Interfaces: {html.escape(str(info.get('interfaces', [])))}</pre>
+            </div>"""
+        html_content += '</div>'
+
+    # Swarm Results
+    swarm = data.get('swarm_results', {})
+    if swarm:
+        html_content += '<div class="card"><h2>Swarm Coordination: Distributed Command Results</h2>'
+        for sid, res in swarm.items():
+            html_content += f"""
+            <div class="finding info">
+                <span class="severity-badge INFO">SWARM_NODE_{sid}</span>
+                <strong>Result from Session {sid}:</strong><br>
+                <pre>{html.escape(str(res))}</pre>
+            </div>"""
         html_content += '</div>'
 
     # Comp hosts

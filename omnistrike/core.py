@@ -6,7 +6,52 @@ import random
 from omnistrike.plugins.base import BasePlugin
 from omnistrike.proxymanager import ProxyManager
 from omnistrike.adapters.base import get_adapter
+from omnistrike.ai_engine import MultiAIEngine
+from omnistrike.notifier import OmniAlert
+from omnistrike.payload_gen import MasterPayloadGenerator
 from aiohttp_socks import ProxyConnector
+import time
+
+class Session:
+    """
+    Represents an active connection to a compromised target.
+    """
+    def __init__(self, session_id, target, conn, info=None):
+        self.id = session_id
+        self.target = target
+        self.conn = conn # The active connection object (e.g. asyncssh connection)
+        self.info = info or {}
+        self.status = "Active"
+        self.created_at = time.time()
+        self.last_active = self.created_at
+
+    def __repr__(self):
+        return f"Session {self.id}: {self.target} ({self.status})"
+
+class SessionManager:
+    """
+    Handles the lifecycle and organization of multiple sessions.
+    """
+    def __init__(self):
+        self.sessions = {}
+        self.next_id = 1
+
+    def create_session(self, target, conn, info=None):
+        sid = self.next_id
+        self.sessions[sid] = Session(sid, target, conn, info)
+        self.next_id += 1
+        return sid
+
+    def get_session(self, sid):
+        return self.sessions.get(int(sid))
+
+    def list_sessions(self):
+        return list(self.sessions.values())
+
+    def kill_session(self, sid):
+        if sid in self.sessions:
+            # Here we would close the connection properly
+            del self.sessions[sid]
 
 class StealthClient:
     """
@@ -55,6 +100,10 @@ class Engine:
         self.proxy_manager = ProxyManager(proxies)
         self.stealth_client = StealthClient(self.proxy_manager, front_domain)
         self.adapter = get_adapter()
+        self.session_manager = SessionManager()
+        self.ai_engine = MultiAIEngine()
+        self.notifier = OmniAlert()
+        self.payload_gen = MasterPayloadGenerator()
 
     def load_plugins(self):
         """Discover and load plugins from the plugins directory."""
@@ -82,6 +131,10 @@ class Engine:
             plugin.proxy_manager = self.proxy_manager
             plugin.stealth_client = self.stealth_client
             plugin.adapter = self.adapter
+            plugin.session_manager = self.session_manager
+            plugin.ai_engine = self.ai_engine
+            plugin.notifier = self.notifier
+            plugin.payload_gen = self.payload_gen
             try:
                 await plugin.run(target, self.data)
             except Exception as e:
@@ -200,6 +253,18 @@ def print_summary(results):
         for path in intelligence[:3]:
             print(f"      - {path['target']} via {path['vector']} (Risk: {path['risk_score']} | {path['action']})")
 
+    deep_vulns = results.get('deep_vulnerabilities', [])
+    if deep_vulns:
+        print("\n[!!!] SOPHISTICATED VULNERABILITIES DETECTED:")
+        for v in deep_vulns:
+            print(f"      - {v['ip']}:{v['port']} -> {v['type']} (Confidence: {v['confidence']})")
+
+    attack_lab = results.get('payload_recommendations', [])
+    if attack_lab:
+        print("\n[!] ATTACK VECTOR LAB: OPTIMAL PAYLOADS READY:")
+        for r in attack_lab:
+            print(f"      - Target: {r['target']} | Use {r['recommended_payload_category'].upper()} for {r['vuln_type']}")
+
     zeroclick = results.get('zeroclick_surfaces', {})
     if zeroclick:
         print("\n[!!!] ZERO-CLICK ATTACK SURFACES DETECTED:")
@@ -251,5 +316,11 @@ def print_summary(results):
     if steg:
         print(f"\n[!!!] STEGANOGRAPHIC CHANNEL: {steg}")
         print(f"      - DECODED SAMPLE: {results.get('stegano_decoded_sample')}")
+
+    swarm = results.get('swarm_results', {})
+    if swarm:
+        print(f"\n[+] SWARM COORDINATION RESULTS ({len(swarm)} nodes):")
+        for sid, res in swarm.items():
+            print(f"      - Node {sid}: {str(res)[:100]}...")
 
     print("\n" + "="*60)

@@ -5,6 +5,10 @@ class BasePlugin(abc.ABC):
         self.proxy_manager = None
         self.stealth_client = None
         self.adapter = None
+        self.session_manager = None
+        self.ai_engine = None
+        self.notifier = None
+        self.payload_gen = None
 
     @abc.abstractmethod
     async def run(self, target, data):

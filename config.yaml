@@ -18,6 +18,10 @@ plugins:
   - baseline_auditor
   - foothold
   - remote_exec
+  - advanced_info
+  - swarm_orchestrator
+  - morphing_backdoor
+  - secret_harvester
   - memory_phantom
   - context_trigger
   - messaging_auditor
@@ -29,3 +33,5 @@ plugins:
   - lateral_pivoter
   - supply_chain_auditor
   - kernel_auditor
+  - osint_master
+  - delivery_suite

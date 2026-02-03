@@ -79,6 +79,14 @@ class CredentialAuditPlugin(BasePlugin):
                             compromised_hosts[ip] = []
                         compromised_hosts[ip].append(cred_entry)
 
+                        # Create persistent session
+                        try:
+                            conn = await asyncssh.connect(ip, username=username, password=password, known_hosts=None)
+                            self.session_manager.create_session(ip, conn, info={"user": username, "type": "SSH Shell"})
+                            print(f"[*] Session established for {ip}")
+                        except:
+                            pass
+
                         # Stop after finding one valid credential for this host
                         break
 
