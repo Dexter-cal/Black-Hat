@@ -133,8 +133,8 @@ async def main():
     # Configure plugin selection based on mode
     mode_plugins = {
         '1': ['behavioral_ai', 'memory_phantom', 'context_trigger', 'system_auditor', 'av_evasion', 'messaging_auditor', 'stealth_orchestrator', 'consensus_ai'],
-        '2': ['discovery', 'scanner', 'credaudit', 'exploit_scanner', 'vuln_verifier', 'lateral_pivoter', 'kernel_auditor', 'supply_chain_auditor', 'foothold', 'remote_exec', 'exploit_intelligence', 'zeroclick_auditor', 'swarm_orchestrator', 'vuln_intel', 'attack_lab', 'decoy_intel', 'identity_shadow', 'supply_chain_pulse', 'faas_auditor', 'edr_blindspot', 'llm_auditor', 'cloud_graph'],
-        '3': ['polymorphic_plugin', 'stegano_plugin', 'polyglot_plugin', 'delivery_suite', 'bitb_gen'],
+        '2': ['discovery', 'scanner', 'credaudit', 'exploit_scanner', 'vuln_verifier', 'lateral_pivoter', 'kernel_auditor', 'supply_chain_auditor', 'foothold', 'remote_exec', 'exploit_intelligence', 'zeroclick_auditor', 'swarm_orchestrator', 'vuln_intel', 'attack_lab', 'decoy_intel', 'identity_shadow', 'supply_chain_pulse', 'faas_auditor', 'edr_blindspot', 'llm_auditor', 'cloud_graph', 'adversarial_ml', 'firmware_auditor', 'zerotrust_auditor'],
+        '3': ['polymorphic_plugin', 'stegano_plugin', 'polyglot_plugin', 'delivery_suite', 'bitb_gen', 'deepfake_social_eng'],
         '4': ['stealth_c2', 'leak_auditor', 'spider', 'web_fuzzer', 'protocol_auditor', 'phishing_auditor', 'osint_master', 'persistence_advanced', 'adapterless_wireless', 'ebpf_phantom', 'exfil_diversion'],
         'wifi': ['wifi_suite', 'adapterless_wireless']
     }
@@ -166,6 +166,7 @@ async def main():
     # Add profile/risk data
     engine.data['operation_profile'] = profile
     engine.data['risk_level'] = args.risk or '2'
+    engine.data['quantum_secure'] = args.profile == '1' or profile == 'stealth' # Stealth profile uses Quantum Crypto
     engine.data['stealth_mode'] = args.stealth
     engine.data['memory_resident'] = args.memory_only
     engine.data['carrier_file'] = args.carrier or config.get('carrier_file')

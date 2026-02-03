@@ -559,6 +559,55 @@ def generate_html(data, output_file):
             </div>"""
         html_content += '</div>'
 
+    # Adversarial ML
+    aml = data.get('adversarial_ml_findings', [])
+    if aml:
+        html_content += '<div class="card"><h2>Adversarial ML & Classifier Evasion Audit</h2>'
+        for f in aml:
+            html_content += f"""
+            <div class="finding">
+                <span class="severity-badge HIGH">{html.escape(f['type'])}</span>
+                <strong>{html.escape(f.get('classifier', 'General Model'))}</strong><br>
+                {html.escape(f.get('vulnerability', f.get('finding', '')))} | RISK: <em>{html.escape(f.get('risk', ''))}</em>
+            </div>"""
+        html_content += '</div>'
+
+    # Firmware Audit
+    firmware = data.get('firmware_audit_findings', [])
+    if firmware:
+        html_content += '<div class="card"><h2>Firmware & UEFI Rootkit Integrity Audit</h2>'
+        for f in firmware:
+            html_content += f"""
+            <div class="finding high">
+                <span class="severity-badge CRITICAL">{html.escape(f['type'])}</span>
+                <strong>{html.escape(f.get('variable', 'General Integrity'))}</strong><br>
+                {html.escape(f['finding'])} | RISK: <em>{html.escape(f['risk'])}</em>
+            </div>"""
+        html_content += '</div>'
+
+    # Zero Trust Audit
+    zt = data.get('zero_trust_audit_findings', [])
+    if zt:
+        html_content += '<div class="card"><h2>Zero Trust Architecture & Identity Bypass Audit</h2>'
+        for f in zt:
+            html_content += f"""
+            <div class="finding high">
+                <span class="severity-badge CRITICAL">{html.escape(f['type'])}</span>
+                {html.escape(f['finding'])} | RISK: <em>{html.escape(f['risk'])}</em>
+            </div>"""
+        html_content += '</div>'
+
+    # Deepfake Social Eng
+    df = data.get('deepfake_social_eng_file', '')
+    if df:
+        html_content += '<div class="card"><h2>Deepfake Social Engineering Orchestration</h2>'
+        html_content += f"""
+        <div class="finding info">
+            <span class="severity-badge INFO">DEEPFAKE_READY</span>
+            <strong>Strategy generated:</strong> <code>{html.escape(df)}</code>
+        </div>"""
+        html_content += '</div>'
+
     # Swarm Results
     swarm = data.get('swarm_results', {})
     if swarm:

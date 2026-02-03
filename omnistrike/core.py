@@ -13,6 +13,7 @@ from omnistrike.ai_engine import MultiAIEngine
 from omnistrike.notifier import OmniAlert
 from omnistrike.payload_gen import MasterPayloadGenerator
 from omnistrike.learning import PersistentLearningDB, SelfHealingEngine
+from omnistrike.pqc import QuantumC2Orchestrator
 from aiohttp_socks import ProxyConnector
 import time
 
@@ -20,7 +21,7 @@ class Session:
     """
     Represents an active connection to a compromised target.
     """
-    def __init__(self, session_id, target, conn, info=None, operator_key=None):
+    def __init__(self, session_id, target, conn, info=None, operator_key=None, quantum_secure=False):
         self.id = session_id
         self.target = target
         self.conn = conn # The active connection object (e.g. asyncssh connection)
@@ -29,6 +30,10 @@ class Session:
         self.created_at = time.time()
         self.last_active = self.created_at
         self.operator_key = operator_key or "OMNISTRIKE-SOVEREIGN-DEFAULT-KEY"
+        self.quantum_secure = quantum_secure
+        if self.quantum_secure:
+            orchestrator = QuantumC2Orchestrator()
+            self.pqc_secret = orchestrator.initiate_handshake()
 
     def sign_command(self, cmd):
         """HMAC signing of commands for secure C2."""
