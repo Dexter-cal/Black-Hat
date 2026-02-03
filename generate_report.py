@@ -412,6 +412,18 @@ def generate_html(data, output_file):
             </div>"""
         html_content += '</div>'
 
+    # Advanced Persistence
+    adv_pers = data.get('advanced_persistence_status', '')
+    if adv_pers:
+        html_content += '<div class="card"><h2>Sovereign Persistence: Advanced LotL Techniques</h2>'
+        html_content += f"""
+        <div class="finding high">
+            <span class="severity-badge CRITICAL">LOTL_PERSISTENCE</span>
+            <strong>Status: {html.escape(adv_pers)}</strong><br>
+            Techniques: Systemd Generators, COM Hijacking, WMI Consumers.
+        </div>"""
+        html_content += '</div>'
+
     # Session Intelligence
     sessions = data.get('session_intelligence', {})
     if sessions:
@@ -425,6 +437,58 @@ def generate_html(data, output_file):
                 UPTIME: <em>{html.escape(str(info.get('uptime', 'N/A')))}</em><br>
                 SECURITY: <span style="color: var(--warning);">{html.escape(str(info.get('security_indicators', 'None')))}</span>
                 <pre>Interfaces: {html.escape(str(info.get('interfaces', [])))}</pre>
+            </div>"""
+        html_content += '</div>'
+
+    # Decoy Intelligence
+    decoys = data.get('decoy_intelligence', [])
+    if decoys:
+        html_content += '<div class="card"><h2>Decoy Intelligence: Threat Trap Detection</h2>'
+        for f in decoys:
+            html_content += f"""
+            <div class="finding">
+                <span class="severity-badge HIGH">DECOY_DETECTED</span>
+                <strong>{html.escape(f['type'])}</strong>: <code>{html.escape(f['indicator'])}</code><br>
+                Confidence: {html.escape(str(f['confidence']))} | RISK: <strong>{html.escape(f['risk'])}</strong>
+            </div>"""
+        html_content += '</div>'
+
+    # Identity Shadow
+    ident = data.get('identity_shadow_audit', [])
+    if ident:
+        html_content += '<div class="card"><h2>Identity Shadow Matrix: Ghost Tokens & Shadow Credentials</h2>'
+        for f in ident:
+            html_content += f"""
+            <div class="finding">
+                <span class="severity-badge CRITICAL">{html.escape(f['type'])}</span>
+                <strong>Target: {html.escape(f.get('target_account', f.get('target_resource', 'Global')))}</strong><br>
+                {html.escape(f['vulnerability'])} | RISK: <em>{html.escape(f['risk'])}</em>
+            </div>"""
+        html_content += '</div>'
+
+    # Supply Chain Pulse
+    pulse = data.get('supply_chain_pulse', [])
+    if pulse:
+        html_content += '<div class="card"><h2>Supply Chain Pulse: Dependency Confusion Audit</h2>'
+        for f in pulse:
+            html_content += f"""
+            <div class="finding high">
+                <span class="severity-badge CRITICAL">{html.escape(f['vulnerability'])}</span>
+                <strong>Package: <code>{html.escape(f['package'])}</code></strong><br>
+                Status: {html.escape(f['status'])} | {html.escape(f['risk'])}
+            </div>"""
+        html_content += '</div>'
+
+    # FaaS Audit
+    faas = data.get('faas_audit_results', [])
+    if faas:
+        html_content += '<div class="card"><h2>Serverless Surface Audit (FaaS)</h2>'
+        for f in faas:
+            html_content += f"""
+            <div class="finding">
+                <span class="severity-badge CRITICAL">{html.escape(f['type'])}</span>
+                <strong>Resource: {html.escape(f['resource'])}</strong><br>
+                {html.escape(f['finding'])} | RISK: <em>{html.escape(f['risk'])}</em>
             </div>"""
         html_content += '</div>'
 

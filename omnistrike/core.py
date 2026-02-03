@@ -3,6 +3,9 @@ import importlib
 import pkgutil
 import aiohttp
 import random
+import hmac
+import hashlib
+import os
 from omnistrike.plugins.base import BasePlugin
 from omnistrike.proxymanager import ProxyManager
 from omnistrike.adapters.base import get_adapter
@@ -17,7 +20,7 @@ class Session:
     """
     Represents an active connection to a compromised target.
     """
-    def __init__(self, session_id, target, conn, info=None):
+    def __init__(self, session_id, target, conn, info=None, operator_key=None):
         self.id = session_id
         self.target = target
         self.conn = conn # The active connection object (e.g. asyncssh connection)
@@ -25,6 +28,16 @@ class Session:
         self.status = "Active"
         self.created_at = time.time()
         self.last_active = self.created_at
+        self.operator_key = operator_key or "OMNISTRIKE-SOVEREIGN-DEFAULT-KEY"
+
+    def sign_command(self, cmd):
+        """HMAC signing of commands for secure C2."""
+        return hmac.new(self.operator_key.encode(), cmd.encode(), hashlib.sha256).hexdigest()
+
+    def verify_response(self, response, signature):
+        """Verifies the response hasn't been tampered with."""
+        expected = hmac.new(self.operator_key.encode(), response.encode(), hashlib.sha256).hexdigest()
+        return hmac.compare_digest(expected, signature)
 
     def __repr__(self):
         return f"Session {self.id}: {self.target} ({self.status})"
@@ -36,10 +49,11 @@ class SessionManager:
     def __init__(self):
         self.sessions = {}
         self.next_id = 1
+        self.operator_key = os.getenv("OMNISTRIKE_KEY", "OMNISTRIKE-SOVEREIGN-DEFAULT-KEY")
 
     def create_session(self, target, conn, info=None):
         sid = self.next_id
-        self.sessions[sid] = Session(sid, target, conn, info)
+        self.sessions[sid] = Session(sid, target, conn, info, operator_key=self.operator_key)
         self.next_id += 1
         return sid
 
