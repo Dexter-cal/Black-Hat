@@ -492,6 +492,73 @@ def generate_html(data, output_file):
             </div>"""
         html_content += '</div>'
 
+    # EDR Blindspots
+    edr = data.get('edr_blindspots', [])
+    if edr:
+        html_content += '<div class="card"><h2>EDR Blindspot Audit & Bypass Trajectories</h2>'
+        for f in edr:
+            html_content += f"""
+            <div class="finding">
+                <span class="severity-badge INFO">{html.escape(f['type'])}</span>
+                <strong>{html.escape(f.get('api', f.get('finding', 'General')))}</strong><br>
+                {html.escape(f.get('recommendation', ''))}
+                <pre>{html.escape(str(f.get('details', '')))}</pre>
+            </div>"""
+        html_content += '</div>'
+
+    # LLM Injection
+    llm = data.get('llm_injection_findings', [])
+    if llm:
+        html_content += '<div class="card"><h2>AI/LLM Injection & Exfiltration Audit</h2>'
+        for f in llm:
+            html_content += f"""
+            <div class="finding high">
+                <span class="severity-badge CRITICAL">{html.escape(f['type'])}</span>
+                <strong>Endpoint: {html.escape(f['endpoint'])}</strong><br>
+                PAYLOAD: <code>{html.escape(f['payload'])}</code> | RISK: <em>{html.escape(f['risk'])}</em>
+            </div>"""
+        html_content += '</div>'
+
+    # Cloud Graph
+    c_graph = data.get('cloud_graph_intelligence', [])
+    if c_graph:
+        html_content += '<div class="card"><h2>Cloud IAM Graph Intelligence: Multihop PrivEsc</h2>'
+        for f in c_graph:
+            html_content += f"""
+            <div class="finding">
+                <span class="severity-badge CRITICAL">{html.escape(f['type'])}</span>
+                <strong>Path Identified:</strong><br>
+                <code>{html.escape(f['path'])}</code><br>
+                RISK: <em>{html.escape(f['risk'])}</em>
+            </div>"""
+        html_content += '</div>'
+
+    # eBPF Phantom
+    ebpf = data.get('ebpf_phantom_status', [])
+    if ebpf:
+        html_content += '<div class="card"><h2>EBpf Phantom: Invisible Kernel Persistence</h2>'
+        for f in ebpf:
+            html_content += f"""
+            <div class="finding high">
+                <span class="severity-badge CRITICAL">{html.escape(f['type'])}</span>
+                <strong>Hook: {html.escape(f['hook_point'] if 'hook_point' in f else f['interface'])}</strong><br>
+                {html.escape(f['purpose'])} | Status: <strong>{html.escape(f['status'])}</strong>
+            </div>"""
+        html_content += '</div>'
+
+    # Exfil Diversion
+    exfil = data.get('exfil_diversion_status', [])
+    if exfil:
+        html_content += '<div class="card"><h2>Covert Exfiltration & Protocol Diversion</h2>'
+        for f in exfil:
+            html_content += f"""
+            <div class="finding info">
+                <span class="severity-badge INFO">{html.escape(f['type'])}</span>
+                <strong>Protocol: {html.escape(f['protocol'])}</strong><br>
+                Activity detected in simulated channel.
+            </div>"""
+        html_content += '</div>'
+
     # Swarm Results
     swarm = data.get('swarm_results', {})
     if swarm:
