@@ -14,24 +14,51 @@ BANNER = r"""
   \____/|_| |_| |_|_| |_|_|_____/ \__|_|  |_|_|\_\___|
 
       Advanced Adversary Emulation Framework
-      Automated Red Team Operations v3.0
+      Automated Red Team Operations v4.0 (APEX)
 """
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="OmniStrike Apex - Advanced Adversary Emulation Framework")
+
+    # 1-4: Operation Modes
+    parser.add_argument("--mode", choices=['1', '2', '3', '4', 'implant', 'exploit', 'generate', 'c2'],
+                        help="Operation Mode: 1:implant, 2:exploit, 3:generate, 4:c2")
+
+    # 5: Target
+    parser.add_argument("-t", "--target", help="Target device, IP, or application")
+
+    # 6-8: Profiles
+    parser.add_argument("--profile", choices=['1', '2', '3', 'stealth', 'aggressive', 'research'],
+                        help="Behavior Profile: 1:stealth, 2:aggressive, 3:research")
+
+    # 9: Timeout
+    parser.add_argument("--timeout", type=int, default=300, help="Operation timeout in seconds")
+
+    # Arguments for various plugins
+    parser.add_argument("-c", "--config", help="Configuration file (YAML)")
+    parser.add_argument("-o", "--output", help="Output file (JSON)")
+    parser.add_argument("-p", "--proxies", help="Proxy list file")
+    parser.add_argument("-w", "--wordlist", help="Credential wordlist")
+    parser.add_argument("-f", "--front", help="Domain fronting host")
+    parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose output")
+
+    # Red-Team Specific Options (Flags)
+    parser.add_argument("--zero-click", action="store_true", help="10: Prefer zero-click vectors")
+    parser.add_argument("--one-click", action="store_true", help="11: Allow one-click vectors")
+    parser.add_argument("--risk", choices=['1', '2', '3'], help="14-16: Risk Level (1:Low, 2:Med, 3:High)")
+    parser.add_argument("--kernel-mode", action="store_true", help="17: Attempt kernel-level escalation")
+    parser.add_argument("--stealth", action="store_true", help="29: Maximize stealth operation")
+    parser.add_argument("--memory-only", action="store_true", help="31: Memory-resident operation only")
+    parser.add_argument("--burn-phase", action="store_true", help="33: Self-destruct triggers enabled")
+
+    return parser.parse_args()
 
 async def main():
     print(BANNER)
-    parser = argparse.ArgumentParser(description="OmniStrike - Advanced Security Auditing Framework")
-    parser.add_argument("target", nargs="?", help="The target domain or IP to audit")
-    parser.add_argument("-c", "--config", help="Configuration file (YAML)")
-    parser.add_argument("-o", "--output", help="Output file (JSON)")
-    parser.add_argument("-p", "--proxies", help="File containing proxy URLs (one per line)")
-    parser.add_argument("-w", "--wordlist", help="Credential wordlist for auditing (user:pass format)")
-    parser.add_argument("-f", "--front", help="Domain to use for domain fronting (e.g., cdn.microsoft.com)")
-    parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose output")
-
-    args = parser.parse_args()
+    args = parse_args()
 
     if not args.target and not args.config:
-        parser.print_help()
+        print("[!] No target or configuration specified.")
         return
 
     config = {}
@@ -44,6 +71,30 @@ async def main():
         print("[!] No target specified.")
         return
 
+    # Map numbered modes/profiles
+    mode = args.mode or config.get('mode', '2')
+    profile = args.profile or config.get('profile', '3')
+
+    # Configure plugin selection based on mode
+    # Mode 1: Implant (Shadow surveillance)
+    # Mode 2: Exploit (Infiltration & Pivot)
+    # Mode 3: Generate (Weaponization research)
+    # Mode 4: C2 (Exfiltration & Orchestration)
+
+    mode_plugins = {
+        '1': ['behavioral_ai', 'memory_phantom', 'context_trigger', 'system_auditor', 'av_evasion', 'messaging_auditor', 'stealth_orchestrator'],
+        '2': ['discovery', 'scanner', 'credaudit', 'exploit_scanner', 'vuln_verifier', 'lateral_pivoter', 'kernel_auditor', 'supply_chain_auditor', 'foothold', 'remote_exec', 'exploit_intelligence', 'zeroclick_auditor'],
+        '3': ['polymorphic_plugin', 'stegano_plugin', 'polyglot_plugin'],
+        '4': ['stealth_c2', 'leak_auditor', 'spider', 'web_fuzzer', 'protocol_auditor', 'phishing_auditor']
+    }
+
+    mode_plugins['implant'] = mode_plugins['1']
+    mode_plugins['exploit'] = mode_plugins['2']
+    mode_plugins['generate'] = mode_plugins['3']
+    mode_plugins['c2'] = mode_plugins['4']
+
+    selected_plugins = mode_plugins.get(mode, mode_plugins['2'])
+
     proxies = []
     if args.proxies:
         with open(args.proxies, 'r') as f:
@@ -54,11 +105,20 @@ async def main():
     engine = Engine(proxies=proxies, front_domain=args.front or config.get('front_domain'))
     engine.load_plugins()
 
+    # Filter engine plugins based on selected mode
+    engine.plugins = [p for p in engine.plugins if p.__class__.__module__.split('.')[-1] in selected_plugins]
+
     if args.wordlist:
         with open(args.wordlist, 'r') as f:
             engine.data['audit_wordlist'] = [line.strip().split(':') for line in f if ':' in line]
 
-    print(f"[*] Initializing operation on {target}...")
+    # Add profile/risk data
+    engine.data['operation_profile'] = profile
+    engine.data['risk_level'] = args.risk or '2'
+    engine.data['stealth_mode'] = args.stealth
+    engine.data['memory_resident'] = args.memory_only
+
+    print(f"[*] Initializing APEX operation on {target} [Mode:{mode} Profile:{profile}]...")
     results = await engine.run(target)
 
     if args.output:
@@ -66,159 +126,14 @@ async def main():
             json.dump(results, f, indent=4)
         print(f"[*] Results saved to {args.output}")
     else:
+        from omnistrike.core import print_summary # We'll move it there for cleanliness
         print_summary(results)
-
-def print_summary(results):
-    print("\n" + "="*60)
-    print("                    SCAN SUMMARY")
-    print("="*60)
-    print(f"Target: {results.get('target')}")
-
-    subdomains = results.get('subdomains', {})
-    if subdomains:
-        print(f"\n[+] Subdomains Found: {len(subdomains)}")
-        for sub, ips in subdomains.items():
-            print(f"    - {sub} ({', '.join(ips)})")
-
-    open_ports = results.get('open_ports', {})
-    fingerprints = results.get('fingerprints', {})
-    if open_ports:
-        print("\n[+] Open Ports & Services:")
-        for ip, ports in open_ports.items():
-            fp = fingerprints.get(ip, "Unknown")
-            print(f"    Target IP: {ip} (OS: {fp})")
-            for port, banner in ports.items():
-                banner_str = f" -> {banner}" if banner else ""
-                print(f"      - Port {port}{banner_str}")
-
-    vulnerabilities = results.get('vulnerabilities', {})
-    if vulnerabilities:
-        print("\n[!] Potential Vulnerabilities Found:")
-        for ip, vulns in vulnerabilities.items():
-            print(f"    Target IP: {ip}")
-            for v in vulns:
-                print(f"      - Port {v['port']}: {v['finding']}")
-
-    creds = results.get('credentials_found', {})
-    if creds:
-        print("\n[!!!] WEAK CREDENTIALS DISCOVERED:")
-        for ip, c_list in creds.items():
-            print(f"    Target IP: {ip}")
-            for c in c_list:
-                print(f"      - [{c['service']}] {c['username']}:{c['password']}")
-
-    exploits = results.get('exploit_findings', {})
-    if exploits:
-        print("\n[!!!] EXPLOITABLE MISCONFIGURATIONS:")
-        for ip, findings in exploits.items():
-            print(f"    Target IP: {ip}")
-            for f in findings:
-                print(f"      - {f['finding']} ({f['url']})")
-
-    spider = results.get('spider_findings', {})
-    if spider:
-        print("\n[+] Web Surfaces Discovered (Spider):")
-        for ip, sdata in spider.items():
-            print(f"    Target IP: {ip}")
-            print(f"      - URLs found: {len(sdata['urls'])}")
-            print(f"      - Forms found: {len(sdata['forms'])}")
-
-    verification = results.get('verification_results', {})
-    if verification:
-        print("\n[!!!] VULNERABILITY VERIFICATION SUCCESSFUL:")
-        for r in verification:
-            print(f"      - {r['verifier']} on {r['target']}: {r['finding']} (Severity: {r['severity']})")
-
-    system_audit = results.get('persistence_findings', {})
-    if system_audit:
-        print("\n[!] SYSTEM AUDIT FINDINGS:")
-        for ip, findings in system_audit.items():
-            print(f"    Target IP: {ip}")
-            for f in findings:
-                print(f"      - {f['check']}: {f['output_snippet'].strip()}")
-
-    adv_sim = results.get('adversary_simulation', {})
-    if adv_sim:
-        print("\n[!] ADVERSARY SIMULATION LOG:")
-        for ip, findings in adv_sim.items():
-            print(f"    Target IP: {ip}")
-            for f in findings:
-                print(f"      - {f['technique']}: {f['status']}")
-
-    fuzzing = results.get('fuzzing_findings', {})
-    if fuzzing:
-        print("\n[!!!] WEB FUZZING VULNERABILITIES DETECTED:")
-        for ip, findings in fuzzing.items():
-            print(f"    Target IP: {ip}")
-            for f in findings:
-                print(f"      - {f['finding']} at {f['url']} (Payload: {f['payload']})")
-
-    protocol = results.get('protocol_audit', {})
-    if protocol:
-        print("\n[!] PROTOCOL SECURITY ISSUES:")
-        for ip, findings in protocol.items():
-            print(f"    Target IP: {ip}")
-            for f in findings:
-                print(f"      - Port {f['port']}: {f['finding']} (Severity: {f['severity']})")
-
-    cloud = results.get('cloud_storage', [])
-    if cloud:
-        print("\n[+] CLOUD STORAGE DISCOVERED:")
-        for c in cloud:
-            print(f"      - {c['status']}: {c['url']}")
-
-    takeovers = results.get('subdomain_takeovers', [])
-    if takeovers:
-        print("\n[!!!] SUBDOMAIN TAKEOVER VULNERABILITIES:")
-        for t in takeovers:
-            print(f"      - {t['subdomain']} -> {t['service']}")
-
-    leaks = results.get('data_leaks', [])
-    if leaks:
-        print("\n[!!!] DATA LEAKAGE DETECTED:")
-        for l in leaks:
-            print(f"      - [{l['type']}] {l['source']} (Severity: {l['severity']})")
-
-    messaging = results.get('messaging_artifacts', {})
-    if messaging:
-        print("\n[+] SECURE MESSAGING ARTIFACTS DISCOVERED:")
-        for ip, findings in messaging.items():
-            print(f"    Target IP: {ip}")
-            for f in findings:
-                print(f"      - {f['app']} ({f['storage_type']}) at {f['path']}")
-
-    triggers = results.get('triggered_operations', {})
-    if triggers:
-        print("\n[+] AUTONOMOUS CONTEXT TRIGGERS ACTIVATED:")
-        for ip, t_list in triggers.items():
-            print(f"    Target IP: {ip}")
-            for t in t_list:
-                print(f"      - {t['rule']} ({t['status']})")
-
-    memory = results.get('memory_indicators', {})
-    if memory:
-        print("\n[!!!] MEMORY-ONLY EXECUTION DETECTED:")
-        for ip, indicators in memory.items():
-            print(f"    Target IP: {ip}")
-            for ind in indicators:
-                print(f"      - {ind['indicator']} (PID: {ind['pid']})")
-
-    ai = results.get('ai_orchestration', {})
-    if ai:
-        print("\n[!!!] BEHAVIORAL AI ORCHESTRATION:")
-        print(f"      - MODE: {ai['mode']}")
-        print(f"      - INTENSITY: {ai['intensity_score']}")
-
-    steg = results.get('stegano_status', '')
-    if steg:
-        print(f"\n[!!!] STEGANOGRAPHIC CHANNEL: {steg}")
-        print(f"      - DECODED SAMPLE: {results.get('stegano_decoded_sample')}")
-
-    print("\n" + "="*60)
 
 if __name__ == "__main__":
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
-        print("\n[!] Scan interrupted by user.")
+        print("\n[!] Operation interrupted by operator.")
         sys.exit(0)
+    except Exception as e:
+        print(f"[!] Critical failure: {e}")

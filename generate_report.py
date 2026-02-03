@@ -169,6 +169,46 @@ def generate_html(data, output_file):
                 </div>"""
         html_content += '</div>'
 
+    # Stealth Orchestration
+    stealth = data.get('stealth_strategy', {})
+    if stealth:
+        html_content += '<div class="card"><h2>Stealth Orchestration: Operational Profile</h2>'
+        html_content += f"""
+        <div class="finding info">
+            <span class="severity-badge INFO">STEALTH_PROFILE</span>
+            <strong>PROFILE: {html.escape(stealth['operational_profile'])}</strong><br>
+            STRATEGIC ADVICE: <em>{html.escape(stealth['strategic_advice'])}</em><br>
+            <pre>Evasion Capabilities: {html.escape(json.dumps(stealth['evasion_capabilities'], indent=2))}</pre>
+        </div>"""
+        html_content += '</div>'
+
+    # Exploit Intelligence
+    intel = data.get('exploit_intelligence', [])
+    if intel:
+        html_content += '<div class="card"><h2>Offensive Brain: Exploit Intelligence</h2>'
+        for path in intel:
+            html_content += f"""
+            <div class="finding">
+                <span class="severity-badge INFO">PRIORITY_{path['priority']}</span>
+                <strong>{html.escape(path['vector'])} on {html.escape(path['target'])}</strong><br>
+                RISK SCORE: <code>{path['risk_score']}</code> | ACTION: <strong>{path['action']}</strong>
+            </div>"""
+        html_content += '</div>'
+
+    # Zero-Click Surfaces
+    zeroclick = data.get('zeroclick_surfaces', {})
+    if zeroclick:
+        html_content += '<div class="card"><h2>Zero-Click Attack Surface Audit</h2>'
+        for ip, findings in zeroclick.items():
+            for f in findings:
+                html_content += f"""
+                <div class="finding high">
+                    <span class="severity-badge HIGH">ZERO_CLICK</span>
+                    <strong>{html.escape(f['service'])}</strong> on {html.escape(ip)}:<code>{f['port']}</code><br>
+                    Potential for unauthorized remote interaction.
+                </div>"""
+        html_content += '</div>'
+
     # Behavioral AI
     ai = data.get('ai_orchestration', {})
     if ai:
